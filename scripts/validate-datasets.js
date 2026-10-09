@@ -3,7 +3,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { validateAll } = require("../public/assets/js/schema");
+const { validateAll, validateLinks } = require("../public/assets/js/schema");
 
 const file = path.join(__dirname, "..", "public", "data", "datasets.json");
 try {
@@ -14,6 +14,11 @@ try {
     }
   }
   console.log(`datasets.json OK: ${list.length} datasets`);
+  const links = path.join(__dirname, "..", "cms", "drive-links.json");
+  if (fs.existsSync(links)) {
+    const n = Object.keys(validateLinks(JSON.parse(fs.readFileSync(links, "utf8")))).length;
+    console.log(`drive-links.json OK: ${n} links`);
+  }
 } catch (err) {
   console.error(`datasets.json is invalid: ${err.message}`);
   process.exit(1);

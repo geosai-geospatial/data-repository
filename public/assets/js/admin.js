@@ -8,7 +8,7 @@
   var CMS = window.SITE.cms;
   var TOKEN_KEY = "geosai-cms-token";
   var $ = function (id) { return document.getElementById(id); };
-  var state = { items: [], editing: null, token: null, branch: CMS.branch };
+  var state = { items: [], links: {}, editing: null, token: null, branch: CMS.branch };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -76,27 +76,39 @@
     return new TextDecoder().decode(bytes);
   }
 
-  function readFile() {
-    return gh("GET", repoPath() + "/contents/" + CMS.path + "?ref=" + encodeURIComponent(state.branch)).then(function (file) {
+  // `fallback` is the content to start from when the file does not exist yet.
+  function readFile(path, fallback) {
+    return gh("GET", repoPath() + "/contents/" + path + "?ref=" + encodeURIComponent(state.branch)).then(function (file) {
       return { sha: file.sha, items: JSON.parse(fromBase64(file.content)) };
+    }).catch(function (err) {
+      if (err.status === 404 && fallback !== undefined) return { sha: null, items: fallback };
+      throw err;
     });
   }
 
   // Reads the latest file, applies `change` to it, and commits the result with
   // the sha just read. If someone else committed in between (409), retry once
   // on top of their version instead of overwriting it.
-  function commit(change, message, retried) {
-    return readFile().then(function (file) {
-      var items = window.Schema.validateAll(change(file.items));
-      return gh("PUT", repoPath() + "/contents/" + CMS.path, {
-        message: message,
-        content: toBase64(JSON.stringify(items, null, 2) + "\n"),
-        sha: file.sha,
-        branch: state.branch,
-      }).then(function () { return items; });
+  function writeJson(path, fallback, check, change, message, retried) {
+    return readFile(path, fallback).then(function (file) {
+      var items = check(change(file.items));
+      var body = { message: message, content: toBase64(JSON.stringify(items, null, 2) + "\n"), branch: state.branch };
+      if (file.sha) body.sha = file.sha;
+      return gh("PUT", repoPath() + "/contents/" + path, body).then(function () { return items; });
     }).catch(function (err) {
-      if ((err.status === 409 || err.status === 422) && !retried) return commit(change, message, true);
+      if ((err.status === 409 || err.status === 422) && !retried) return writeJson(path, fallback, check, change, message, true);
       throw err;
+    });
+  }
+
+  function commit(change, message) {
+    return writeJson(CMS.path, undefined, window.Schema.validateAll, change, message);
+  }
+
+  function commitLinks(change, message) {
+    return writeJson(CMS.linksPath, {}, window.Schema.validateLinks, change, message).then(function (links) {
+      state.links = links;
+      return links;
     });
   }
 
@@ -188,8 +200,9 @@
 
   // ---------- List ----------
   function loadList() {
-    return readFile().then(function (file) {
-      state.items = file.items;
+    return Promise.all([readFile(CMS.path), readFile(CMS.linksPath, {})]).then(function (res) {
+      state.items = res[0].items;
+      state.links = res[1].items;
       drawList();
       show("list");
     });
@@ -205,7 +218,9 @@
       return (
         "<tr><td><strong>" + esc(d.title) + '</strong><div class="small"><a href="dataset.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">' + esc(d.id) + "</a></div></td>" +
         "<td>" + esc(d.category) + "</td><td>" + esc(d.price) + "</td><td>" + status + "</td><td>" + esc(d.updated || "") + "</td>" +
-        '<td class="row-actions"><button type="button" class="link" data-edit="' + esc(d.id) + '">Edit</button>' +
+        '<td class="row-actions">' +
+        (state.links[d.id] ? '<a class="link" href="' + esc(state.links[d.id]) + '" target="_blank" rel="noopener noreferrer">Drive ↗</a>' : "") +
+        '<button type="button" class="link" data-edit="' + esc(d.id) + '">Edit</button>' +
         '<button type="button" class="link danger" data-delete="' + esc(d.id) + '">Delete</button></td></tr>'
       );
     }).join("");
@@ -231,6 +246,10 @@
       }, "CMS: delete " + del).then(function (items) {
         deleteImage(d.image, del);
         saved(items, "Deleted “" + d.title + "”.");
+        if (state.links[del]) {
+          commitLinks(function (links) { delete links[del]; return links; }, "CMS: remove Drive link " + del)
+            .then(drawList).catch(function () { /* a leftover link is harmless */ });
+        }
       }).catch(function (err) { e.target.disabled = false; alert(err.message); });
     }
   });
@@ -308,6 +327,7 @@
       attrRow();
     }
     showPreview(state.image);
+    f.drive.value = d ? state.links[d.id] || "" : "";
     $("image-remove-wrap").hidden = !(d && d.image);
     show("form");
     f.title.focus();
@@ -364,6 +384,14 @@
       $("form-error").hidden = false;
       return;
     }
+    var drive = f.drive.value.trim();
+    try {
+      window.Schema.validateLinks(drive ? { x: drive } : {});
+    } catch (err) {
+      $("form-error").textContent = "The Google Drive link must start with https://drive.google.com/";
+      $("form-error").hidden = false;
+      return;
+    }
     record.updated = today();
     if (!id && state.items.some(function (x) { return x.id === record.id; })) {
       $("form-error").textContent = 'A dataset with id "' + record.id + '" already exists.';
@@ -389,6 +417,17 @@
       }, "CMS: " + (id ? "update " : "add ") + record.id);
     }).then(function (items) {
       if (oldImage && oldImage !== record.image) deleteImage(oldImage, record.id);
+      if (drive === (state.links[record.id] || "")) return items;
+      // The link lives in its own admin-only file, committed after the dataset.
+      return commitLinks(function (links) {
+        if (drive) links[record.id] = drive; else delete links[record.id];
+        return links;
+      }, "CMS: Drive link " + record.id).then(function () { return items; }, function (err) {
+        state.items = items;
+        drawList();
+        throw new Error("The dataset was saved, but the Drive link was not: " + err.message);
+      });
+    }).then(function (items) {
       saved(items, "Saved “" + record.title + "”.");
     }).catch(function (err) {
       $("form-error").textContent = err.message;
@@ -404,6 +443,7 @@
   $("btn-logout").addEventListener("click", function () {
     clearToken();
     state.items = [];
+    state.links = {};
     $("rows").innerHTML = "";
     notice("");
     show("login");

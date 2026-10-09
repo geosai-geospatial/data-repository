@@ -99,6 +99,22 @@
     return out;
   }
 
+  // Validates the admin-only Drive links file: { "<dataset id>": "https://drive.google.com/…" }.
+  // Empty links are dropped. Only Google Drive/Docs URLs are accepted.
+  var DRIVE_RE = /^https:\/\/(?:drive|docs)\.google\.com\/\S*$/;
+  function validateLinks(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) fail("drive-links.json must contain a JSON object");
+    var out = {};
+    Object.keys(obj).sort().forEach(function (id) {
+      if (!ID_RE.test(id)) fail('Drive link key "' + id + '" is not a valid dataset id');
+      var url = str(obj[id], "Drive link for " + id, { max: 500 });
+      if (!url) return;
+      if (!DRIVE_RE.test(url)) fail("Drive link for " + id + " must start with https://drive.google.com/");
+      out[id] = url;
+    });
+    return out;
+  }
+
   // Validates the whole catalog file: an array of valid datasets with unique ids.
   function validateAll(list) {
     if (!Array.isArray(list)) fail("datasets.json must contain a JSON array");
@@ -112,5 +128,5 @@
     });
   }
 
-  return { validate: validate, validateAll: validateAll, GEOMETRIES: GEOMETRIES, IMAGE_RE: IMAGE_RE };
+  return { validate: validate, validateAll: validateAll, GEOMETRIES: GEOMETRIES, IMAGE_RE: IMAGE_RE, validateLinks: validateLinks };
 });

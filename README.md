@@ -23,6 +23,7 @@ Public pages ──────────────────────�
 - **Safety net.** The form validates input, and the deploy workflow checks `datasets.json` again (`scripts/validate-datasets.js`). If the file is broken, for example by a hand edit, the deploy stops and the live site keeps the last good version.
 - **Drafts.** Untick *Published* to hide a dataset from the catalog. Drafts are still in `datasets.json`, which is public in a public repository, so don't put secrets in them.
 - **Coverage image.** Upload a PNG (or JPEG/WebP, max 5 MB) in the form; it is committed to `public/data/images/<id>.png` and shown under *Cakupan wilayah* on the detail page. Replacing or removing it, or deleting the dataset, also removes the old file.
+- **Google Drive link (admin only).** Each dataset can have a link to its Drive folder, shown as a *Drive ↗* shortcut in the admin list. It is stored in `cms/drive-links.json`, outside `public/`, so it is not on the website. The repository is public, though, so the file is readable on GitHub: keep every Drive folder's sharing set to **Restricted** and share it with each buyer by email.
 - **IDs.** The dataset ID is the URL slug (`dataset.html?id=…`) and is fixed after creation so links shared with buyers keep working.
 
 ## One-time setup

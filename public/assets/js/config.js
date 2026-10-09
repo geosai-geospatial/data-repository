@@ -18,5 +18,9 @@ window.SITE = {
     repo: "data-repository",
     branch: "",
     path: "public/data/datasets.json",
+    // Admin-only Google Drive folder links. Kept outside public/ so it is not
+    // part of the website, but the repository is public, so it is still
+    // readable on GitHub: keep the Drive folders' sharing set to Restricted.
+    linksPath: "cms/drive-links.json",
   },
 };

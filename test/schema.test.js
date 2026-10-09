@@ -4,7 +4,7 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
-const { validate, validateAll } = require("../public/assets/js/schema");
+const { validate, validateAll, validateLinks } = require("../public/assets/js/schema");
 
 test("the shipped catalog is valid", () => {
   const list = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "public", "data", "datasets.json"), "utf8"));
@@ -44,6 +44,15 @@ test("rejects invalid datasets", () => {
 test("accepts a coverage image path", () => {
   assert.equal(validate({ id: "a", title: "T", category: "C", image: "data/images/a-b.png" }).image, "data/images/a-b.png");
   assert.equal(validate({ id: "a", title: "T", category: "C", image: "data/images/a.jpg" }).image, "data/images/a.jpg");
+});
+
+test("validates admin Drive links", () => {
+  const url = "https://drive.google.com/drive/folders/abc123";
+  assert.deepEqual(validateLinks({ "a-b": url, c: "" }), { "a-b": url });
+  assert.throws(() => validateLinks({ a: "javascript:alert(1)" }));
+  assert.throws(() => validateLinks({ a: "https://drive.google.com.evil.com/x" }));
+  assert.throws(() => validateLinks({ "Bad Id": url }));
+  assert.throws(() => validateLinks([]));
 });
 
 test("rejects duplicate ids and non-arrays", () => {

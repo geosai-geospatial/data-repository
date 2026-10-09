@@ -9,6 +9,9 @@
 
   var GEOMETRIES = ["Polygon", "Line", "Point", "Raster", "Mixed"];
   var ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  // Coverage images live next to datasets.json, uploaded by the admin. Only
+  // this exact shape is accepted, so the value is always a same-site image path.
+  var IMAGE_RE = /^data\/images\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:png|jpe?g|webp)$/;
 
   function fail(msg) { throw new Error(msg); }
 
@@ -50,6 +53,9 @@
       }
     }
 
+    var image = str(input.image, "image", { max: 200 });
+    if (image && !IMAGE_RE.test(image)) fail("image must be a path like data/images/<id>.png");
+
     var features = 0;
     if (input.features != null && input.features !== "") {
       features = Number(input.features);
@@ -77,6 +83,7 @@
       description: strList(input.description, "description", { max: 4000, maxItems: 30 }),
       coverage: str(input.coverage, "coverage", { max: 200 }),
       bbox: bbox,
+      image: image,
       source: str(input.source, "source", { max: 300 }),
       year: str(input.year, "year", { max: 20 }),
       format: strList(input.format, "format", { max: 30, maxItems: 20 }),
@@ -89,6 +96,22 @@
       published: input.published !== false,
     };
     if (input.updated) out.updated = str(input.updated, "updated", { max: 10 });
+    return out;
+  }
+
+  // Validates the admin-only Drive links file: { "<dataset id>": "https://drive.google.com/…" }.
+  // Empty links are dropped. Only Google Drive/Docs URLs are accepted.
+  var DRIVE_RE = /^https:\/\/(?:drive|docs)\.google\.com\/\S*$/;
+  function validateLinks(obj) {
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) fail("drive-links.json must contain a JSON object");
+    var out = {};
+    Object.keys(obj).sort().forEach(function (id) {
+      if (!ID_RE.test(id)) fail('Drive link key "' + id + '" is not a valid dataset id');
+      var url = str(obj[id], "Drive link for " + id, { max: 500 });
+      if (!url) return;
+      if (!DRIVE_RE.test(url)) fail("Drive link for " + id + " must start with https://drive.google.com/");
+      out[id] = url;
+    });
     return out;
   }
 
@@ -105,5 +128,5 @@
     });
   }
 
-  return { validate: validate, validateAll: validateAll, GEOMETRIES: GEOMETRIES };
+  return { validate: validate, validateAll: validateAll, GEOMETRIES: GEOMETRIES, IMAGE_RE: IMAGE_RE, validateLinks: validateLinks };
 });

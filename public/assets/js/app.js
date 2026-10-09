@@ -141,7 +141,10 @@
       "<h1>" + esc(d.title) + '</h1><p class="lead">' + esc(d.summary) + "</p></div>" +
       '<div class="detail"><div>' +
       '<section class="panel"><h2>Deskripsi</h2>' + (d.description || []).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") + "</section>" +
-      '<section class="panel"><h2>Cakupan wilayah</h2><div id="map" role="img" aria-label="Peta cakupan ' + esc(d.coverage) + '"></div></section>' +
+      (d.image
+        ? '<section class="panel"><h2>Cakupan wilayah</h2><a class="coverage-img" href="' + esc(imageUrl(d)) + '" target="_blank" rel="noopener">' +
+          '<img src="' + esc(imageUrl(d)) + '" alt="Peta cakupan ' + esc(d.coverage || d.title) + '"></a></section>'
+        : "") +
       '<section class="panel"><h2>Struktur atribut</h2><div class="table-wrap"><table class="attr"><thead><tr><th>Kolom</th><th>Tipe</th><th>Keterangan</th></tr></thead><tbody>' +
       (d.attributes || []).map(function (a) {
         return "<tr><td><code>" + esc(a.name) + "</code></td><td>" + esc(a.type) + "</td><td>" + esc(a.description) + "</td></tr>";
@@ -158,20 +161,14 @@
       specs.map(function (s) { return "<tr><th>" + esc(s[0]) + "</th><td>" + esc(s[1]) + "</td></tr>"; }).join("") +
       "</tbody></table></div></aside></div>";
 
-    drawMap(d.bbox);
+    // If the image is missing (e.g. still deploying), hide the panel instead of showing a broken image.
+    var img = root.querySelector(".coverage-img img");
+    if (img) img.addEventListener("error", function () { img.closest(".panel").hidden = true; });
   }
 
-  function drawMap(bbox) {
-    var el = document.getElementById("map");
-    if (!el || !window.L || !bbox) { if (el) el.closest(".panel").style.display = "none"; return; }
-    var bounds = [[bbox[1], bbox[0]], [bbox[3], bbox[2]]];
-    var map = L.map(el, { scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 18,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    }).addTo(map);
-    L.rectangle(bounds, { color: "#0f5e4b", weight: 2, fillOpacity: 0.12 }).addTo(map);
-    map.fitBounds(bounds, { padding: [16, 16] });
+  // `updated` changes on every admin save, so a replaced image is not served stale from cache.
+  function imageUrl(d) {
+    return d.image + (d.updated ? "?v=" + encodeURIComponent(d.updated) : "");
   }
 
   // ---------- Contact ----------

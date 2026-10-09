@@ -8,7 +8,7 @@
   var CMS = window.SITE.cms;
   var TOKEN_KEY = "geosai-cms-token";
   var $ = function (id) { return document.getElementById(id); };
-  var state = { items: [], editing: null, token: null, branch: CMS.branch };
+  var state = { items: [], links: {}, editing: null, token: null, branch: CMS.branch };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -63,7 +63,10 @@
 
   // UTF-8 safe base64 (dataset text contains characters like ± and ≥).
   function toBase64(text) {
-    var bytes = new TextEncoder().encode(text), bin = "";
+    return bytesToBase64(new TextEncoder().encode(text));
+  }
+  function bytesToBase64(bytes) {
+    var bin = "";
     for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return btoa(bin);
   }
@@ -73,28 +76,72 @@
     return new TextDecoder().decode(bytes);
   }
 
-  function readFile() {
-    return gh("GET", repoPath() + "/contents/" + CMS.path + "?ref=" + encodeURIComponent(state.branch)).then(function (file) {
+  // `fallback` is the content to start from when the file does not exist yet.
+  function readFile(path, fallback) {
+    return gh("GET", repoPath() + "/contents/" + path + "?ref=" + encodeURIComponent(state.branch)).then(function (file) {
       return { sha: file.sha, items: JSON.parse(fromBase64(file.content)) };
+    }).catch(function (err) {
+      if (err.status === 404 && fallback !== undefined) return { sha: null, items: fallback };
+      throw err;
     });
   }
 
   // Reads the latest file, applies `change` to it, and commits the result with
   // the sha just read. If someone else committed in between (409), retry once
   // on top of their version instead of overwriting it.
-  function commit(change, message, retried) {
-    return readFile().then(function (file) {
-      var items = window.Schema.validateAll(change(file.items));
-      return gh("PUT", repoPath() + "/contents/" + CMS.path, {
-        message: message,
-        content: toBase64(JSON.stringify(items, null, 2) + "\n"),
-        sha: file.sha,
-        branch: state.branch,
-      }).then(function () { return items; });
+  function writeJson(path, fallback, check, change, message, retried) {
+    return readFile(path, fallback).then(function (file) {
+      var items = check(change(file.items));
+      var body = { message: message, content: toBase64(JSON.stringify(items, null, 2) + "\n"), branch: state.branch };
+      if (file.sha) body.sha = file.sha;
+      return gh("PUT", repoPath() + "/contents/" + path, body).then(function () { return items; });
     }).catch(function (err) {
-      if ((err.status === 409 || err.status === 422) && !retried) return commit(change, message, true);
+      if ((err.status === 409 || err.status === 422) && !retried) return writeJson(path, fallback, check, change, message, true);
       throw err;
     });
+  }
+
+  function commit(change, message) {
+    return writeJson(CMS.path, undefined, window.Schema.validateAll, change, message);
+  }
+
+  function commitLinks(change, message) {
+    return writeJson(CMS.linksPath, {}, window.Schema.validateLinks, change, message).then(function (links) {
+      state.links = links;
+      return links;
+    });
+  }
+
+  // ---------- Images ----------
+  // Images are stored beside datasets.json: dataset.image is "data/images/<id>.png",
+  // relative to the site root, which is the folder two levels above CMS.path.
+  var IMAGE_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+  var IMAGE_MAX = 5 * 1024 * 1024;
+  var SITE_ROOT = CMS.path.replace(/[^/]*\/[^/]*$/, "");
+
+  function fileSha(repoFile) {
+    return gh("GET", repoPath() + "/contents/" + repoFile + "?ref=" + encodeURIComponent(state.branch))
+      .then(function (file) { return file.sha; })
+      .catch(function (err) { if (err.status === 404) return null; throw err; });
+  }
+
+  function uploadImage(id, file) {
+    var image = "data/images/" + id + "." + IMAGE_TYPES[file.type];
+    var repoFile = SITE_ROOT + image;
+    return Promise.all([file.arrayBuffer(), fileSha(repoFile)]).then(function (res) {
+      var body = { message: "CMS: image " + id, content: bytesToBase64(new Uint8Array(res[0])), branch: state.branch };
+      if (res[1]) body.sha = res[1];
+      return gh("PUT", repoPath() + "/contents/" + repoFile, body);
+    }).then(function () { return image; });
+  }
+
+  // Best effort: a leftover image file is harmless, so a failure here is not an error.
+  function deleteImage(image, id) {
+    if (!image) return Promise.resolve();
+    var repoFile = SITE_ROOT + image;
+    return fileSha(repoFile).then(function (sha) {
+      if (sha) return gh("DELETE", repoPath() + "/contents/" + repoFile, { message: "CMS: remove image " + id, sha: sha, branch: state.branch });
+    }).catch(function () { /* ignore */ });
   }
 
   function today() {
@@ -153,8 +200,9 @@
 
   // ---------- List ----------
   function loadList() {
-    return readFile().then(function (file) {
-      state.items = file.items;
+    return Promise.all([readFile(CMS.path), readFile(CMS.linksPath, {})]).then(function (res) {
+      state.items = res[0].items;
+      state.links = res[1].items;
       drawList();
       show("list");
     });
@@ -170,7 +218,9 @@
       return (
         "<tr><td><strong>" + esc(d.title) + '</strong><div class="small"><a href="dataset.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">' + esc(d.id) + "</a></div></td>" +
         "<td>" + esc(d.category) + "</td><td>" + esc(d.price) + "</td><td>" + status + "</td><td>" + esc(d.updated || "") + "</td>" +
-        '<td class="row-actions"><button type="button" class="link" data-edit="' + esc(d.id) + '">Edit</button>' +
+        '<td class="row-actions">' +
+        (state.links[d.id] ? '<a class="link" href="' + esc(state.links[d.id]) + '" target="_blank" rel="noopener noreferrer">Drive ↗</a>' : "") +
+        '<button type="button" class="link" data-edit="' + esc(d.id) + '">Edit</button>' +
         '<button type="button" class="link danger" data-delete="' + esc(d.id) + '">Delete</button></td></tr>'
       );
     }).join("");
@@ -194,7 +244,12 @@
       commit(function (items) {
         return items.filter(function (x) { return x.id !== del; });
       }, "CMS: delete " + del).then(function (items) {
+        deleteImage(d.image, del);
         saved(items, "Deleted “" + d.title + "”.");
+        if (state.links[del]) {
+          commitLinks(function (links) { delete links[del]; return links; }, "CMS: remove Drive link " + del)
+            .then(drawList).catch(function () { /* a leftover link is harmless */ });
+        }
       }).catch(function (err) { e.target.disabled = false; alert(err.message); });
     }
   });
@@ -216,8 +271,37 @@
     $("attrs").appendChild(row);
   }
 
+  function showPreview(src) {
+    $("image-preview").src = src || "";
+    $("image-preview").hidden = !src;
+  }
+
+  f.image.addEventListener("change", function () {
+    var file = f.image.files[0];
+    $("form-error").hidden = true;
+    if (!file) { showPreview(state.image); return; }
+    var problem = !IMAGE_TYPES[file.type] ? "The image must be a PNG, JPEG or WebP file." :
+      file.size > IMAGE_MAX ? "The image is larger than 5 MB. Please export a smaller one." : "";
+    if (problem) {
+      f.image.value = "";
+      showPreview(state.image);
+      $("form-error").textContent = problem;
+      $("form-error").hidden = false;
+      return;
+    }
+    f.imageRemove.checked = false;
+    var reader = new FileReader();
+    reader.onload = function () { showPreview(reader.result); };
+    reader.readAsDataURL(file);
+  });
+  f.imageRemove.addEventListener("change", function () {
+    if (f.imageRemove.checked) f.image.value = "";
+    showPreview(f.imageRemove.checked ? "" : state.image);
+  });
+
   function openForm(d) {
     state.editing = d ? d.id : null;
+    state.image = d && d.image ? d.image + "?v=" + encodeURIComponent(d.updated || "") : "";
     form.reset();
     $("form-error").hidden = true;
     $("attrs").innerHTML = "";
@@ -242,6 +326,9 @@
     } else {
       attrRow();
     }
+    showPreview(state.image);
+    f.drive.value = d ? state.links[d.id] || "" : "";
+    $("image-remove-wrap").hidden = !(d && d.image);
     show("form");
     f.title.focus();
   }
@@ -252,6 +339,10 @@
     f.id.value = f.title.value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
   });
   f.id.addEventListener("input", function () { f.id.dataset.touched = "1"; });
+
+  function current() {
+    return state.editing ? state.items.filter(function (x) { return x.id === state.editing; })[0] : null;
+  }
 
   function readForm() {
     var bbox = [0, 1, 2, 3].map(function (i) { return f["bbox" + i].value; });
@@ -272,6 +363,7 @@
       features: f.features.value === "" ? 0 : Number(f.features.value),
       size: f.size.value,
       bbox: hasBbox ? bbox : null,
+      image: current() && !f.imageRemove.checked ? current().image : "",
       attributes: Array.prototype.map.call($("attrs").children, function (row) {
         var a = {};
         row.querySelectorAll("input").forEach(function (inp) { a[inp.getAttribute("data-k")] = inp.value.trim(); });
@@ -292,19 +384,50 @@
       $("form-error").hidden = false;
       return;
     }
+    var drive = f.drive.value.trim();
+    try {
+      window.Schema.validateLinks(drive ? { x: drive } : {});
+    } catch (err) {
+      $("form-error").textContent = "The Google Drive link must start with https://drive.google.com/";
+      $("form-error").hidden = false;
+      return;
+    }
     record.updated = today();
+    if (!id && state.items.some(function (x) { return x.id === record.id; })) {
+      $("form-error").textContent = 'A dataset with id "' + record.id + '" already exists.';
+      $("form-error").hidden = false;
+      return;
+    }
+    var oldImage = (current() || {}).image || "";
+    var file = f.image.files[0];
     btn.disabled = true;
-    commit(function (items) {
-      if (id) {
-        var i = items.findIndex(function (x) { return x.id === id; });
-        if (i < 0) throw new Error("This dataset was deleted in the meantime. Reload the page.");
-        items[i] = record;
-      } else {
-        if (items.some(function (x) { return x.id === record.id; })) throw new Error('A dataset with id "' + record.id + '" already exists.');
-        items.push(record);
-      }
-      return items;
-    }, "CMS: " + (id ? "update " : "add ") + record.id).then(function (items) {
+    // Upload the image first, so datasets.json never points at a file that isn't there.
+    (file ? uploadImage(record.id, file) : Promise.resolve(record.image)).then(function (image) {
+      record.image = image;
+      return commit(function (items) {
+        if (id) {
+          var i = items.findIndex(function (x) { return x.id === id; });
+          if (i < 0) throw new Error("This dataset was deleted in the meantime. Reload the page.");
+          items[i] = record;
+        } else {
+          if (items.some(function (x) { return x.id === record.id; })) throw new Error('A dataset with id "' + record.id + '" already exists.');
+          items.push(record);
+        }
+        return items;
+      }, "CMS: " + (id ? "update " : "add ") + record.id);
+    }).then(function (items) {
+      if (oldImage && oldImage !== record.image) deleteImage(oldImage, record.id);
+      if (drive === (state.links[record.id] || "")) return items;
+      // The link lives in its own admin-only file, committed after the dataset.
+      return commitLinks(function (links) {
+        if (drive) links[record.id] = drive; else delete links[record.id];
+        return links;
+      }, "CMS: Drive link " + record.id).then(function () { return items; }, function (err) {
+        state.items = items;
+        drawList();
+        throw new Error("The dataset was saved, but the Drive link was not: " + err.message);
+      });
+    }).then(function (items) {
       saved(items, "Saved “" + record.title + "”.");
     }).catch(function (err) {
       $("form-error").textContent = err.message;
@@ -320,6 +443,7 @@
   $("btn-logout").addEventListener("click", function () {
     clearToken();
     state.items = [];
+    state.links = {};
     $("rows").innerHTML = "";
     notice("");
     show("login");

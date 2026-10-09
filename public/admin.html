@@ -89,7 +89,18 @@
           <label>Feature count<input name="features" type="number" min="0" step="1"></label>
           <label>File size<input name="size" maxlength="50" placeholder="± 120 MB"></label>
           <fieldset class="span-2">
-            <legend>Bounding box (WGS84, optional — drawn on the detail map)</legend>
+            <legend>Coverage image (optional — shown on the detail page)</legend>
+            <div class="image-field">
+              <img id="image-preview" class="image-preview" alt="" hidden>
+              <div class="image-controls">
+                <input name="image" type="file" accept="image/png,image/jpeg,image/webp">
+                <span class="hint">PNG (or JPEG/WebP), up to 5 MB. Saved to the repository as data/images/&lt;id&gt;.png.</span>
+                <label class="check" id="image-remove-wrap" hidden><input type="checkbox" name="imageRemove"> Remove current image</label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="span-2">
+            <legend>Bounding box (WGS84, optional)</legend>
             <div class="bbox">
               <label>West<input name="bbox0" type="number" step="any"></label>
               <label>South<input name="bbox1" type="number" step="any"></label>
@@ -102,6 +113,7 @@
             <div id="attrs"></div>
             <button type="button" class="btn btn-email btn-inline" id="btn-add-attr">+ Add attribute</button>
           </fieldset>
+          <label class="span-2">Google Drive folder (admin only)<input name="drive" type="url" maxlength="500" placeholder="https://drive.google.com/drive/folders/…"><span class="hint">Shown only here in the admin, as a “Drive ↗” shortcut. Not on the public site, but stored in the public repository, so keep the folder's sharing set to Restricted.</span></label>
           <label class="check span-2"><input type="checkbox" name="published" checked> Published (visible in the public catalog)</label>
         </div>
         <p class="form-error" id="form-error" role="alert" hidden></p>

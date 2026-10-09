@@ -1,9 +1,14 @@
-// Admin CMS: list, create, edit and delete datasets through /api/datasets.
+// Admin CMS: list, create, edit and delete datasets. There is no server:
+// datasets.json lives in the GitHub repository, and every save is a commit made
+// with the admin's own GitHub token through the Contents API. The push then
+// triggers the Pages workflow, which redeploys the public site.
 (function () {
   "use strict";
 
+  var CMS = window.SITE.cms;
+  var TOKEN_KEY = "geosai-cms-token";
   var $ = function (id) { return document.getElementById(id); };
-  var state = { items: [], editing: null };
+  var state = { items: [], editing: null, token: null, branch: CMS.branch };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -11,20 +16,90 @@
     });
   }
 
-  function api(method, url, body) {
-    return fetch(url, {
+  // ---------- Token storage ----------
+  // sessionStorage by default (gone when the tab closes); localStorage only if
+  // the admin ticks "Remember". Storage can throw in private modes, so guard it.
+  function readToken() {
+    try { return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+  }
+  function saveToken(token, remember) {
+    try { (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, token); } catch (e) { /* in-memory only */ }
+  }
+  function clearToken() {
+    state.token = null;
+    try { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); } catch (e) { /* ignore */ }
+  }
+
+  // ---------- GitHub API ----------
+  function gh(method, path, body) {
+    return fetch("https://api.github.com" + path, {
       method: method,
-      headers: body ? { "Content-Type": "application/json", Accept: "application/json" } : { Accept: "application/json" },
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: "Bearer " + state.token,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+      },
       body: body ? JSON.stringify(body) : undefined,
-      credentials: "same-origin",
+      cache: "no-store",
     }).then(function (r) {
-      if (r.status === 401) { show("login"); throw new Error("Your session has expired. Please sign in again."); }
-      if (r.status === 204) return null;
-      return r.json().then(function (data) {
-        if (!r.ok) throw new Error(data.error || "HTTP " + r.status);
-        return data;
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (r.ok) return data;
+        var err = new Error(data.message || "GitHub returned HTTP " + r.status);
+        err.status = r.status;
+        if (r.status === 401) {
+          clearToken();
+          show("login");
+          err.message = "GitHub rejected the token (expired or revoked). Please sign in again.";
+        }
+        throw err;
       });
     });
+  }
+
+  function repoPath() {
+    return "/repos/" + encodeURIComponent(CMS.owner) + "/" + encodeURIComponent(CMS.repo);
+  }
+
+  // UTF-8 safe base64 (dataset text contains characters like ± and ≥).
+  function toBase64(text) {
+    var bytes = new TextEncoder().encode(text), bin = "";
+    for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+  function fromBase64(b64) {
+    var bin = atob(b64.replace(/\s/g, "")), bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  function readFile() {
+    return gh("GET", repoPath() + "/contents/" + CMS.path + "?ref=" + encodeURIComponent(state.branch)).then(function (file) {
+      return { sha: file.sha, items: JSON.parse(fromBase64(file.content)) };
+    });
+  }
+
+  // Reads the latest file, applies `change` to it, and commits the result with
+  // the sha just read. If someone else committed in between (409), retry once
+  // on top of their version instead of overwriting it.
+  function commit(change, message, retried) {
+    return readFile().then(function (file) {
+      var items = window.Schema.validateAll(change(file.items));
+      return gh("PUT", repoPath() + "/contents/" + CMS.path, {
+        message: message,
+        content: toBase64(JSON.stringify(items, null, 2) + "\n"),
+        sha: file.sha,
+        branch: state.branch,
+      }).then(function () { return items; });
+    }).catch(function (err) {
+      if ((err.status === 409 || err.status === 422) && !retried) return commit(change, message, true);
+      throw err;
+    });
+  }
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
 
   function show(view) {
@@ -32,10 +107,54 @@
     window.scrollTo(0, 0);
   }
 
+  function notice(text) {
+    $("notice").textContent = text;
+    $("notice").hidden = !text;
+  }
+
+  // ---------- Sign in ----------
+  // The token is accepted only if GitHub says it can push to the repository:
+  // write access to the repo is what makes someone an admin.
+  function signIn(token) {
+    state.token = token;
+    return Promise.all([gh("GET", "/user"), gh("GET", repoPath())]).then(function (res) {
+      var me = res[0], repo = res[1];
+      if (!repo.permissions || !repo.permissions.push) {
+        clearToken();
+        throw new Error("This token cannot write to " + CMS.owner + "/" + CMS.repo + ". Give it Contents: Read and write on this repository.");
+      }
+      state.branch = CMS.branch || repo.default_branch;
+      $("who").innerHTML = (me.avatar_url ? '<img src="' + esc(me.avatar_url) + '" alt="">' : "") + esc(me.login);
+      return loadList();
+    }).catch(function (err) {
+      if (err.status === 404) {
+        clearToken();
+        err.message = "Repository " + CMS.owner + "/" + CMS.repo + " was not found with this token. Check that the token has access to it.";
+      }
+      throw err;
+    });
+  }
+
+  $("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var lf = this.elements, token = lf.token.value.trim();
+    if (!token) return;
+    $("btn-login").disabled = true;
+    $("login-error").hidden = true;
+    signIn(token).then(function () {
+      saveToken(token, lf.remember.checked);
+      lf.token.value = "";
+    }).catch(function (err) {
+      clearToken();
+      $("login-error").textContent = err.message;
+      $("login-error").hidden = false;
+    }).finally(function () { $("btn-login").disabled = false; });
+  });
+
   // ---------- List ----------
   function loadList() {
-    return api("GET", "/api/datasets?all=1").then(function (items) {
-      state.items = items;
+    return readFile().then(function (file) {
+      state.items = file.items;
       drawList();
       show("list");
     });
@@ -57,14 +176,26 @@
     }).join("");
   }
 
+  function saved(items, text) {
+    state.items = items;
+    drawList();
+    show("list");
+    notice(text + " The public site updates in about a minute.");
+  }
+
   $("rows").addEventListener("click", function (e) {
     var edit = e.target.getAttribute("data-edit");
     var del = e.target.getAttribute("data-delete");
     if (edit) openForm(state.items.filter(function (d) { return d.id === edit; })[0]);
     if (del) {
       var d = state.items.filter(function (x) { return x.id === del; })[0];
-      if (!confirm("Delete “" + d.title + "”? This cannot be undone.")) return;
-      api("DELETE", "/api/datasets/" + encodeURIComponent(del)).then(loadList).catch(function (err) { alert(err.message); });
+      if (!confirm("Delete “" + d.title + "”? (It stays in the repository's git history.)")) return;
+      e.target.disabled = true;
+      commit(function (items) {
+        return items.filter(function (x) { return x.id !== del; });
+      }, "CMS: delete " + del).then(function (items) {
+        saved(items, "Deleted “" + d.title + "”.");
+      }).catch(function (err) { e.target.disabled = false; alert(err.message); });
     }
   });
 
@@ -140,7 +271,7 @@
       geometry: f.geometry.value,
       features: f.features.value === "" ? 0 : Number(f.features.value),
       size: f.size.value,
-      bbox: hasBbox ? bbox.map(Number) : null,
+      bbox: hasBbox ? bbox : null,
       attributes: Array.prototype.map.call($("attrs").children, function (row) {
         var a = {};
         row.querySelectorAll("input").forEach(function (inp) { a[inp.getAttribute("data-k")] = inp.value.trim(); });
@@ -152,13 +283,30 @@
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var btn = $("btn-save");
-    btn.disabled = true;
+    var btn = $("btn-save"), id = state.editing, record;
     $("form-error").hidden = true;
-    var req = state.editing
-      ? api("PUT", "/api/datasets/" + encodeURIComponent(state.editing), readForm())
-      : api("POST", "/api/datasets", readForm());
-    req.then(loadList).catch(function (err) {
+    try {
+      record = window.Schema.validate(readForm());
+    } catch (err) {
+      $("form-error").textContent = err.message;
+      $("form-error").hidden = false;
+      return;
+    }
+    record.updated = today();
+    btn.disabled = true;
+    commit(function (items) {
+      if (id) {
+        var i = items.findIndex(function (x) { return x.id === id; });
+        if (i < 0) throw new Error("This dataset was deleted in the meantime. Reload the page.");
+        items[i] = record;
+      } else {
+        if (items.some(function (x) { return x.id === record.id; })) throw new Error('A dataset with id "' + record.id + '" already exists.');
+        items.push(record);
+      }
+      return items;
+    }, "CMS: " + (id ? "update " : "add ") + record.id).then(function (items) {
+      saved(items, "Saved “" + record.title + "”.");
+    }).catch(function (err) {
       $("form-error").textContent = err.message;
       $("form-error").hidden = false;
     }).finally(function () { btn.disabled = false; });
@@ -170,16 +318,24 @@
     el.addEventListener("click", function (e) { e.preventDefault(); show("list"); });
   });
   $("btn-logout").addEventListener("click", function () {
-    api("POST", "/auth/logout").then(function () { show("login"); });
+    clearToken();
+    state.items = [];
+    $("rows").innerHTML = "";
+    notice("");
+    show("login");
   });
 
   // ---------- Boot ----------
-  fetch("/api/me", { credentials: "same-origin" })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (me) {
-      if (!me) return show("login");
-      $("who").innerHTML = (me.avatar ? '<img src="' + esc(me.avatar) + '" alt="">' : "") + esc(me.login);
-      return loadList();
-    })
-    .catch(function (err) { alert(err.message); });
+  $("repo-name").textContent = CMS.owner + "/" + CMS.repo;
+  var stored = readToken();
+  if (!stored) {
+    show("login");
+  } else {
+    signIn(stored).catch(function (err) {
+      clearToken();
+      show("login");
+      $("login-error").textContent = err.message;
+      $("login-error").hidden = false;
+    });
+  }
 })();

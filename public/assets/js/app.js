@@ -194,11 +194,13 @@
     if (rt) rt.textContent = SITE.responseTime;
   }
 
-  function getJSON(url) {
-    return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) {
-      if (r.status === 404) return null;
+  // Published datasets only; drafts stay in the file but are not listed.
+  function loadDatasets() {
+    return fetch("data/datasets.json", { cache: "no-cache" }).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
+    }).then(function (list) {
+      return list.filter(function (d) { return d.published !== false; });
     });
   }
 
@@ -210,14 +212,14 @@
     var page = document.body.getAttribute("data-page");
     renderLayout(page);
     if (page === "home") {
-      getJSON("/api/datasets")
-        .then(function (list) { DATASETS = list || []; renderHome(); })
+      loadDatasets()
+        .then(function (list) { DATASETS = list; renderHome(); })
         .catch(function () { loadError(document.getElementById("grid")); });
     }
     if (page === "dataset") {
       var id = new URLSearchParams(location.search).get("id") || "";
-      getJSON("/api/datasets/" + encodeURIComponent(id))
-        .then(renderDataset)
+      loadDatasets()
+        .then(function (list) { renderDataset(list.filter(function (d) { return d.id === id; })[0]); })
         .catch(function () { loadError(document.getElementById("detail")); });
     }
     if (page === "contact") renderContact();

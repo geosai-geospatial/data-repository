@@ -1,53 +1,58 @@
 # GeoSAI Data — katalog data spasial
 
-Catalog site for selling Indonesian geospatial datasets (IUP mining, IUPHHK-HTI/HA, kawasan hutan, plantation concessions, admin boundaries), with a small admin CMS. The owner signs in with GitHub and creates, edits, publishes/unpublishes and deletes datasets; the public pages update immediately.
+Catalog site for selling Indonesian geospatial datasets, hosted free on GitHub Pages, with a small admin CMS at `/admin.html`.
+
+Live site: https://geosai-geospatial.github.io/data-repository/
 
 ## How it works
 
+There is no server. The catalog is one file in this repository, `public/data/datasets.json`:
+
 ```
-Browser ──► Node/Express (server.js)
-             ├── /                 public pages (public/*.html), read datasets from the API
-             ├── /admin.html       CMS (list + form), needs a session
-             ├── /api/datasets     GET = public · POST/PUT/DELETE = admin only
-             ├── /auth/github      → GitHub OAuth → /auth/github/callback
-             └── data/datasets.json  the database (one JSON file)
+Admin page ──(your GitHub token)──► GitHub API: commit datasets.json
+                                          │ push
+                                          ▼
+                     GitHub Actions: validate datasets.json → deploy public/ to Pages
+                                          │ ~1 minute
+                                          ▼
+Public pages ──────────────────────► read data/datasets.json
 ```
 
-- **Login.** GitHub OAuth with no scopes (only the public profile is read). After GitHub confirms who you are, the server checks the username against `ADMIN_GITHUB_USERS`; anyone else gets "Access denied". The session is an HMAC-signed, HttpOnly cookie valid for 7 days; the GitHub token is discarded.
-- **Storage.** `data/datasets.json`, created from `data/seed.json` (the example datasets) on first start. Writes are atomic (temp file + rename). Fine for one admin and hundreds of datasets; swap `lib/store.js` for a database if that ever changes.
-- **Drafts.** Untick *Published* to hide a dataset from the public catalog while you prepare it.
+- **Sign in.** Paste a GitHub fine-grained access token. The admin accepts it only if GitHub says it can write to this repository, so whoever can edit the repo can edit the catalog. The token is kept in the browser tab (or on the device, if you tick *Remember*) and is only ever sent to `api.github.com`.
+- **Every save is a commit** (`CMS: add …`, `CMS: update …`, `CMS: delete …`), so you have a full history and can undo anything with git.
+- **Safety net.** The form validates input, and the deploy workflow checks `datasets.json` again (`scripts/validate-datasets.js`). If the file is broken, for example by a hand edit, the deploy stops and the live site keeps the last good version.
+- **Drafts.** Untick *Published* to hide a dataset from the catalog. Drafts are still in `datasets.json`, which is public in a public repository, so don't put secrets in them.
 - **IDs.** The dataset ID is the URL slug (`dataset.html?id=…`) and is fixed after creation so links shared with buyers keep working.
 
-## Run locally
+## One-time setup
 
-Requires Node.js ≥ 20.12.
+1. **Pages:** Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. **Token:** [GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token](https://github.com/settings/personal-access-tokens/new)
+   - Resource owner: `geosai-geospatial` (an organisation owner may need to approve the token)
+   - Repository access: *Only select repositories* → `data-repository`
+   - Permissions → Repository → **Contents: Read and write**
+3. Open `/admin.html` on the live site and paste the token.
 
-1. Create a GitHub OAuth app: **GitHub → Settings → Developer settings → OAuth Apps → New OAuth App**
-   - Homepage URL: `http://localhost:3000`
-   - Authorization callback URL: `http://localhost:3000/auth/github/callback`
-2. Configure and start:
-   ```sh
-   cp .env.example .env      # fill in client ID/secret, your GitHub username, SESSION_SECRET
-   npm install
-   npm start                 # or: npm run dev (auto-restart)
-   ```
-3. Open http://localhost:3000/admin.html and sign in.
+When the token expires, generate a new one and sign in again.
 
-Run the tests with `npm test`.
+## Configuration
 
-## Deploy
+`public/assets/js/config.js`:
 
-GitHub Pages only serves static files, so it can't run the login or save edits. Deploy to any Node host instead (Render, Railway, Fly.io, a VPS):
+- `contacts`: Telegram, Discord, email (empty values are hidden).
+- `cms`: the repository, branch and file path the admin commits to. An empty `branch` means the repo's default branch. The deploy workflow (`.github/workflows/pages.yml`) runs on pushes to `main` and `claude/vibrant-clarke-y6qm5s`; if you change the default branch, make sure it is in that list.
 
-- Start command `npm start`, build command `npm install`.
-- Set the variables from `.env.example`. `BASE_URL` must be the public `https://…` URL, and the OAuth app's callback must be `BASE_URL/auth/github/callback` (create a separate OAuth app for production).
-- **Attach a persistent disk and point `DATA_DIR` at it.** Most hosts wipe the container filesystem on each deploy; without a persistent disk your edits are lost.
-- Back up `datasets.json` occasionally (download it from the disk, or copy it into `data/seed.json` and commit).
+Styling: `public/assets/css/style.css` (brand colour is `--brand`).
 
-## Editing other content
+## Local preview and tests
 
-- **Contacts and site name** — `public/assets/js/config.js`.
-- **Styling** — `public/assets/css/style.css` (brand colour is `--brand`).
+```sh
+npm start        # serves public/ at http://localhost:8000
+npm test         # schema tests
+npm run validate # check public/data/datasets.json
+```
+
+Saving from a local preview commits to the real repository, the same as on the live site.
 
 ## Before going live
 

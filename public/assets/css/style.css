@@ -231,3 +231,9 @@ main { padding: 40px 0 64px; }
   .attr-row { grid-template-columns: 1fr 1fr; }
   .attr-row input[data-k="description"] { grid-column: 1 / -1; }
 }
+.login-form { text-align: left; display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.login-form .btn { margin-top: 4px; cursor: pointer; font: inherit; font-weight: 600; }
+.token-help { text-align: left; margin-top: 20px; font-size: 14px; color: var(--muted); }
+.token-help summary { cursor: pointer; font-weight: 600; color: var(--text); }
+.token-help ol { padding-left: 20px; }
+.notice { background: var(--brand-soft); color: var(--brand-dark); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px; }

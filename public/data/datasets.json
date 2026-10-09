@@ -74,8 +74,8 @@
       }
     ],
     "price": "Hubungi kami",
-    "updated": "2026-10-01",
-    "published": true
+    "published": true,
+    "updated": "2026-10-01"
   },
   {
     "id": "iuphhk-hti-indonesia",
@@ -136,8 +136,8 @@
       }
     ],
     "price": "Hubungi kami",
-    "updated": "2026-10-01",
-    "published": true
+    "published": true,
+    "updated": "2026-10-01"
   },
   {
     "id": "iuphhk-ha-indonesia",
@@ -187,8 +187,8 @@
       }
     ],
     "price": "Hubungi kami",
-    "updated": "2026-10-01",
-    "published": true
+    "published": true,
+    "updated": "2026-10-01"
   },
   {
     "id": "kawasan-hutan-indonesia",
@@ -238,8 +238,8 @@
       }
     ],
     "price": "Hubungi kami",
-    "updated": "2026-10-01",
-    "published": true
+    "published": true,
+    "updated": "2026-10-01"
   },
   {
     "id": "hgu-perkebunan-sawit",
@@ -294,8 +294,8 @@
       }
     ],
     "price": "Hubungi kami",
-    "updated": "2026-10-01",
-    "published": true
+    "published": true,
+    "updated": "2026-10-01"
   },
   {
     "id": "batas-administrasi-desa",
@@ -350,7 +350,27 @@
       }
     ],
     "price": "Hubungi kami",
-    "updated": "2026-10-01",
-    "published": true
+    "published": true,
+    "updated": "2026-10-01"
+  },
+  {
+    "id": "tes",
+    "title": "tes",
+    "category": "Pertambangan",
+    "summary": "",
+    "description": [],
+    "coverage": "",
+    "bbox": null,
+    "source": "",
+    "year": "",
+    "format": [],
+    "crs": "",
+    "geometry": "Polygon",
+    "features": 0,
+    "size": "",
+    "attributes": [],
+    "price": "Hubungi kami",
+    "published": true,
+    "updated": "2026-10-09"
   }
 ]

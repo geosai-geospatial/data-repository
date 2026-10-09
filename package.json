@@ -1,18 +1,14 @@
 {
   "name": "geosai-data",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
-  "description": "Geospatial dataset catalog with a GitHub-login admin CMS",
-  "main": "server.js",
+  "description": "Static geospatial dataset catalog on GitHub Pages with a token-based admin CMS",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "test": "node --test"
+    "start": "python3 -m http.server 8000 --directory public",
+    "test": "node --test",
+    "validate": "node scripts/validate-datasets.js"
   },
   "engines": {
-    "node": ">=20.12"
-  },
-  "dependencies": {
-    "express": "^5.2.1"
+    "node": ">=18"
   }
 }

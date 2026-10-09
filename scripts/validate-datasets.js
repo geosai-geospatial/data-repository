@@ -1,0 +1,15 @@
+// CI check: fails the deploy if public/data/datasets.json is not valid.
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+const { validateAll } = require("../public/assets/js/schema");
+
+const file = path.join(__dirname, "..", "public", "data", "datasets.json");
+try {
+  const list = validateAll(JSON.parse(fs.readFileSync(file, "utf8")));
+  console.log(`datasets.json OK: ${list.length} datasets`);
+} catch (err) {
+  console.error(`datasets.json is invalid: ${err.message}`);
+  process.exit(1);
+}

@@ -11,4 +11,12 @@ window.SITE = {
     email: "", // e.g. "data@example.com"
   },
   responseTime: "Biasanya membalas dalam 1×24 jam (hari kerja, WIB).",
+  // Admin (admin.html) saves edits as commits to this repository through the
+  // GitHub API. Leave branch empty to use the repository's default branch.
+  cms: {
+    owner: "geosai-geospatial",
+    repo: "data-repository",
+    branch: "",
+    path: "public/data/datasets.json",
+  },
 };

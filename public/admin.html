@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com; connect-src https://api.github.com; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="no-referrer">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f5e4b'/%3E%3Cpath d='M7 10v14l6-3 6 3 6-3V7l-6 3-6-3z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,12 +21,28 @@
     <!-- Logged out -->
     <section id="view-login" class="panel login" hidden>
       <h1>Admin</h1>
-      <p>Sign in with your GitHub account to manage the dataset catalog.</p>
-      <a class="btn btn-github" href="/auth/github">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg>
-        Sign in with GitHub
-      </a>
-      <p class="small">Only GitHub accounts listed by the site owner can sign in.</p>
+      <p>Sign in with a GitHub access token that can write to <strong id="repo-name"></strong>. Each save becomes a commit, and the site updates about a minute later.</p>
+      <form id="login-form" class="admin-form login-form">
+        <label>GitHub access token
+          <input name="token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" required>
+        </label>
+        <label class="check"><input type="checkbox" name="remember"> Remember on this device</label>
+        <p class="form-error" id="login-error" role="alert" hidden></p>
+        <button class="btn btn-github" type="submit" id="btn-login">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg>
+          Sign in
+        </button>
+      </form>
+      <details class="token-help">
+        <summary>How do I get a token?</summary>
+        <ol>
+          <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → Fine-grained tokens → Generate new token</a>.</li>
+          <li><b>Resource owner:</b> the account or organisation that owns the repository. <b>Repository access:</b> <i>Only select repositories</i> → this repository.</li>
+          <li><b>Permissions → Repository → Contents:</b> <i>Read and write</i>. Nothing else is needed.</li>
+          <li>Pick an expiry, generate, and paste the token here.</li>
+        </ol>
+        <p>The token stays in this browser and is only sent to api.github.com. Without “Remember”, it is forgotten when you close the tab.</p>
+      </details>
     </section>
 
     <!-- Logged in: list -->
@@ -32,7 +50,7 @@
       <div class="section-head">
         <div>
           <h2>Datasets</h2>
-          <p>Create, edit, publish or delete the datasets shown in the catalog.</p>
+          <p>Create, edit, publish or delete the datasets shown in the catalog. Changes appear on the public site about a minute after saving.</p>
         </div>
         <div class="admin-actions">
           <span class="who" id="who"></span>
@@ -40,6 +58,7 @@
           <button class="btn btn-email btn-inline" id="btn-logout" type="button">Sign out</button>
         </div>
       </div>
+      <p class="notice" id="notice" role="status" hidden></p>
       <div class="panel table-wrap">
         <table class="attr admin-table">
           <thead><tr><th>Title</th><th>Category</th><th>Price</th><th>Status</th><th>Updated</th><th></th></tr></thead>
@@ -99,6 +118,7 @@
 <footer class="site-footer" id="site-footer"></footer>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="assets/js/schema.js"></script>
 <script src="assets/js/admin.js"></script>
 </body>
 </html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f5e4b'/%3E%3Cpath d='M7 10v14l6-3 6 3 6-3V7l-6 3-6-3z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<title>Kontak — GeoSAI Data</title>
+<meta name="description" content="Hubungi GeoSAI Data via Telegram atau Discord untuk penawaran, sampel, dan pemesanan data spasial.">
+</head>
+<body data-page="contact">
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container">
+    <div class="detail-head">
+      <h1>Hubungi kami</h1>
+      <p class="lead">Tanyakan ketersediaan data, minta sampel, atau pesan dataset kustom. <span id="response-time"></span></p>
+    </div>
+    <div class="contact-grid" id="contact-cards"></div>
+
+    <section class="panel faq">
+      <h2>Pertanyaan umum</h2>
+      <details><summary>Bagaimana cara membeli dataset?</summary><p>Kirim nama dataset yang Anda minati lewat Telegram atau Discord. Kami akan mengirim penawaran harga, sampel atribut, dan pratinjau geometri. Setelah pembayaran dikonfirmasi, file dikirim melalui tautan unduhan.</p></details>
+      <details><summary>Apakah saya bisa melihat sampel sebelum membeli?</summary><p>Bisa. Kami menyediakan potongan data (subset wilayah) atau tangkapan layar tabel atribut agar Anda dapat menilai kualitasnya terlebih dahulu.</p></details>
+      <details><summary>Format apa saja yang tersedia?</summary><p>Umumnya Shapefile (SHP) dan GeoPackage (GPKG). GeoJSON, KML, atau proyeksi lain (mis. UTM) dapat disiapkan berdasarkan permintaan.</p></details>
+      <details><summary>Bisakah saya memesan data untuk wilayah tertentu saja?</summary><p>Bisa. Data dapat dipotong per provinsi, kabupaten, atau batas area Anda sendiri.</p></details>
+      <details><summary>Dari mana data berasal?</summary><p>Sumber setiap dataset dicantumkan di halaman detailnya. Sebagian besar adalah kompilasi dan pembersihan dari publikasi resmi instansi pemerintah. Data bersifat referensi dan bukan pengganti dokumen legal resmi.</p></details>
+    </section>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/datasets.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

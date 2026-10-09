@@ -352,25 +352,5 @@
     "price": "Hubungi kami",
     "published": true,
     "updated": "2026-10-01"
-  },
-  {
-    "id": "tes",
-    "title": "tes",
-    "category": "Pertambangan",
-    "summary": "",
-    "description": [],
-    "coverage": "",
-    "bbox": null,
-    "source": "",
-    "year": "",
-    "format": [],
-    "crs": "",
-    "geometry": "Polygon",
-    "features": 0,
-    "size": "",
-    "attributes": [],
-    "price": "Hubungi kami",
-    "published": true,
-    "updated": "2026-10-09"
   }
 ]

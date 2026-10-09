@@ -20,9 +20,11 @@ Live site (after Pages is enabled): https://geosai-geospatial.github.io/data-rep
 
 ## Publishing on GitHub Pages
 
-1. Repo **Settings → Pages**.
-2. **Source: Deploy from a branch**, pick the branch (e.g. `main`) and folder `/ (root)`, save.
-3. The site appears at the URL above within a minute or two.
+Deployment runs from `.github/workflows/pages.yml` on every push to `main` (or the current working branch).
+
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Push a commit, or run the workflow manually from the **Actions** tab ("Deploy site to GitHub Pages" → Run workflow).
+3. When the run is green, the site is live at the URL above.
 
 GitHub Pages on a private repository requires a paid GitHub plan; on the free plan the repository must be public.
 

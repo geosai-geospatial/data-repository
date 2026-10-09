@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f5e4b'/%3E%3Cpath d='M7 10v14l6-3 6 3 6-3V7l-6 3-6-3z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<title>Admin — GeoSAI Data</title>
+</head>
+<body data-page="admin">
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container">
+
+    <!-- Logged out -->
+    <section id="view-login" class="panel login" hidden>
+      <h1>Admin</h1>
+      <p>Sign in with your GitHub account to manage the dataset catalog.</p>
+      <a class="btn btn-github" href="/auth/github">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.1c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.7 1.7.3 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg>
+        Sign in with GitHub
+      </a>
+      <p class="small">Only GitHub accounts listed by the site owner can sign in.</p>
+    </section>
+
+    <!-- Logged in: list -->
+    <section id="view-list" hidden>
+      <div class="section-head">
+        <div>
+          <h2>Datasets</h2>
+          <p>Create, edit, publish or delete the datasets shown in the catalog.</p>
+        </div>
+        <div class="admin-actions">
+          <span class="who" id="who"></span>
+          <button class="btn btn-primary btn-inline" id="btn-new" type="button">+ New dataset</button>
+          <button class="btn btn-email btn-inline" id="btn-logout" type="button">Sign out</button>
+        </div>
+      </div>
+      <div class="panel table-wrap">
+        <table class="attr admin-table">
+          <thead><tr><th>Title</th><th>Category</th><th>Price</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Logged in: form -->
+    <section id="view-form" hidden>
+      <div class="breadcrumb"><a href="#" data-back>Datasets</a> / <span id="form-title">New dataset</span></div>
+      <form id="form" class="panel admin-form" novalidate>
+        <div class="form-grid">
+          <label>Title *<input name="title" required maxlength="200"></label>
+          <label>ID (URL slug) *<input name="id" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" placeholder="e.g. iup-minerba-2025"><span class="hint">Lowercase, digits, dashes. Cannot be changed later.</span></label>
+          <label>Category *<input name="category" required list="categories" maxlength="60"></label>
+          <label>Price<input name="price" maxlength="100" placeholder="Hubungi kami"></label>
+          <label class="span-2">Summary<textarea name="summary" rows="2" maxlength="600"></textarea></label>
+          <label class="span-2">Description<textarea name="description" rows="6"></textarea><span class="hint">Separate paragraphs with a blank line.</span></label>
+          <label>Coverage<input name="coverage" maxlength="200"></label>
+          <label>Source<input name="source" maxlength="300"></label>
+          <label>Year<input name="year" maxlength="20"></label>
+          <label>Formats<input name="format" placeholder="SHP, GeoPackage"><span class="hint">Comma separated.</span></label>
+          <label>CRS<input name="crs" maxlength="100" placeholder="EPSG:4326 (WGS 84)"></label>
+          <label>Geometry
+            <select name="geometry"><option>Polygon</option><option>Line</option><option>Point</option><option>Raster</option><option>Mixed</option></select>
+          </label>
+          <label>Feature count<input name="features" type="number" min="0" step="1"></label>
+          <label>File size<input name="size" maxlength="50" placeholder="± 120 MB"></label>
+          <fieldset class="span-2">
+            <legend>Bounding box (WGS84, optional — drawn on the detail map)</legend>
+            <div class="bbox">
+              <label>West<input name="bbox0" type="number" step="any"></label>
+              <label>South<input name="bbox1" type="number" step="any"></label>
+              <label>East<input name="bbox2" type="number" step="any"></label>
+              <label>North<input name="bbox3" type="number" step="any"></label>
+            </div>
+          </fieldset>
+          <fieldset class="span-2">
+            <legend>Attributes</legend>
+            <div id="attrs"></div>
+            <button type="button" class="btn btn-email btn-inline" id="btn-add-attr">+ Add attribute</button>
+          </fieldset>
+          <label class="check span-2"><input type="checkbox" name="published" checked> Published (visible in the public catalog)</label>
+        </div>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-inline" id="btn-save">Save</button>
+          <button type="button" class="btn btn-email btn-inline" data-back>Cancel</button>
+        </div>
+      </form>
+      <datalist id="categories"></datalist>
+    </section>
+
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

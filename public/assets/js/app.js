@@ -2,7 +2,7 @@
   "use strict";
 
   var SITE = window.SITE;
-  var DATASETS = window.DATASETS || [];
+  var DATASETS = [];
 
   var ICONS = {
     logo: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
@@ -44,7 +44,7 @@
       footer.innerHTML =
         '<div class="container">' +
         "<div>&copy; " + new Date().getFullYear() + " " + esc(SITE.name) + ". Data spasial untuk riset, perencanaan, dan uji tuntas.</div>" +
-        '<nav><a href="index.html">Katalog</a><a href="contact.html">Kontak</a></nav>' +
+        '<nav><a href="index.html">Katalog</a><a href="contact.html">Kontak</a><a href="admin.html">Admin</a></nav>' +
         "</div>";
     }
   }
@@ -94,7 +94,7 @@
         return (
           '<a class="card" href="dataset.html?id=' + encodeURIComponent(d.id) + '">' +
           '<div class="card-meta"><span class="badge cat">' + esc(d.category) + "</span>" +
-          d.format.map(function (f) { return '<span class="badge">' + esc(f) + "</span>"; }).join("") + "</div>" +
+          (d.format || []).map(function (f) { return '<span class="badge">' + esc(f) + "</span>"; }).join("") + "</div>" +
           "<h3>" + esc(d.title) + "</h3>" +
           "<p>" + esc(d.summary) + "</p>" +
           '<div class="card-meta"><span class="badge">' + esc(d.coverage) + '</span><span class="badge">Tahun ' + esc(d.year) + "</span></div>" +
@@ -113,9 +113,7 @@
   }
 
   // ---------- Detail ----------
-  function renderDataset() {
-    var id = new URLSearchParams(location.search).get("id");
-    var d = DATASETS.filter(function (x) { return x.id === id; })[0];
+  function renderDataset(d) {
     var root = document.getElementById("detail");
 
     if (!d) {
@@ -129,7 +127,7 @@
       ["Cakupan", d.coverage],
       ["Tahun data", d.year],
       ["Sumber", d.source],
-      ["Format", d.format.join(", ")],
+      ["Format", (d.format || []).join(", ")],
       ["Sistem koordinat", d.crs],
       ["Tipe geometri", d.geometry],
       ["Jumlah fitur", fmtNumber(d.features)],
@@ -142,10 +140,10 @@
       '<div class="detail-head"><span class="badge cat">' + esc(d.category) + "</span>" +
       "<h1>" + esc(d.title) + '</h1><p class="lead">' + esc(d.summary) + "</p></div>" +
       '<div class="detail"><div>' +
-      '<section class="panel"><h2>Deskripsi</h2>' + d.description.map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") + "</section>" +
+      '<section class="panel"><h2>Deskripsi</h2>' + (d.description || []).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("") + "</section>" +
       '<section class="panel"><h2>Cakupan wilayah</h2><div id="map" role="img" aria-label="Peta cakupan ' + esc(d.coverage) + '"></div></section>' +
       '<section class="panel"><h2>Struktur atribut</h2><div class="table-wrap"><table class="attr"><thead><tr><th>Kolom</th><th>Tipe</th><th>Keterangan</th></tr></thead><tbody>' +
-      d.attributes.map(function (a) {
+      (d.attributes || []).map(function (a) {
         return "<tr><td><code>" + esc(a.name) + "</code></td><td>" + esc(a.type) + "</td><td>" + esc(a.description) + "</td></tr>";
       }).join("") +
       "</tbody></table></div></section>" +
@@ -196,11 +194,32 @@
     if (rt) rt.textContent = SITE.responseTime;
   }
 
+  function getJSON(url) {
+    return fetch(url, { headers: { Accept: "application/json" } }).then(function (r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  }
+
+  function loadError(el) {
+    el.innerHTML = '<div class="panel empty"><h2>Gagal memuat data</h2><p>Silakan muat ulang halaman ini.</p></div>';
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var page = document.body.getAttribute("data-page");
     renderLayout(page);
-    if (page === "home") renderHome();
-    if (page === "dataset") renderDataset();
+    if (page === "home") {
+      getJSON("/api/datasets")
+        .then(function (list) { DATASETS = list || []; renderHome(); })
+        .catch(function () { loadError(document.getElementById("grid")); });
+    }
+    if (page === "dataset") {
+      var id = new URLSearchParams(location.search).get("id") || "";
+      getJSON("/api/datasets/" + encodeURIComponent(id))
+        .then(renderDataset)
+        .catch(function () { loadError(document.getElementById("detail")); });
+    }
     if (page === "contact") renderContact();
   });
 })();

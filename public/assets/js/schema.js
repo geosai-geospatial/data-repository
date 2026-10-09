@@ -9,6 +9,9 @@
 
   var GEOMETRIES = ["Polygon", "Line", "Point", "Raster", "Mixed"];
   var ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  // Coverage images live next to datasets.json, uploaded by the admin. Only
+  // this exact shape is accepted, so the value is always a same-site image path.
+  var IMAGE_RE = /^data\/images\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:png|jpe?g|webp)$/;
 
   function fail(msg) { throw new Error(msg); }
 
@@ -50,6 +53,9 @@
       }
     }
 
+    var image = str(input.image, "image", { max: 200 });
+    if (image && !IMAGE_RE.test(image)) fail("image must be a path like data/images/<id>.png");
+
     var features = 0;
     if (input.features != null && input.features !== "") {
       features = Number(input.features);
@@ -77,6 +83,7 @@
       description: strList(input.description, "description", { max: 4000, maxItems: 30 }),
       coverage: str(input.coverage, "coverage", { max: 200 }),
       bbox: bbox,
+      image: image,
       source: str(input.source, "source", { max: 300 }),
       year: str(input.year, "year", { max: 20 }),
       format: strList(input.format, "format", { max: 30, maxItems: 20 }),
@@ -105,5 +112,5 @@
     });
   }
 
-  return { validate: validate, validateAll: validateAll, GEOMETRIES: GEOMETRIES };
+  return { validate: validate, validateAll: validateAll, GEOMETRIES: GEOMETRIES, IMAGE_RE: IMAGE_RE };
 });

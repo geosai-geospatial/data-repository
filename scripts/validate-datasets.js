@@ -8,6 +8,11 @@ const { validateAll } = require("../public/assets/js/schema");
 const file = path.join(__dirname, "..", "public", "data", "datasets.json");
 try {
   const list = validateAll(JSON.parse(fs.readFileSync(file, "utf8")));
+  for (const d of list) {
+    if (d.image && !fs.existsSync(path.join(__dirname, "..", "public", d.image))) {
+      throw new Error(`Dataset "${d.id}": image ${d.image} does not exist in public/`);
+    }
+  }
   console.log(`datasets.json OK: ${list.length} datasets`);
 } catch (err) {
   console.error(`datasets.json is invalid: ${err.message}`);

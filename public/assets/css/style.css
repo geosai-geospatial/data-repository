@@ -134,7 +134,8 @@ main { padding: 40px 0 64px; }
 .panel h2 { font-size: 18px; margin: 0 0 12px; }
 .panel p { margin: 0 0 12px; }
 .panel p:last-child { margin-bottom: 0; }
-#map { height: 320px; border-radius: 8px; border: 1px solid var(--border); }
+.coverage-img { display: block; }
+.coverage-img img { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); }
 
 .specs { width: 100%; border-collapse: collapse; font-size: 14px; }
 .specs th, .specs td { text-align: left; padding: 10px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -222,6 +223,9 @@ main { padding: 40px 0 64px; }
 .admin-form .check { flex-direction: row; align-items: center; gap: 8px; }
 .admin-form .check input { width: auto; }
 .bbox { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.image-field { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
+.image-field .image-preview { width: 220px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+.image-field .image-controls { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 200px; }
 .attr-row { display: grid; grid-template-columns: 1fr 120px 2fr auto; gap: 8px; margin-bottom: 8px; }
 .form-error { color: #b42318; background: #fef3f2; border: 1px solid #fecdca; border-radius: 8px; padding: 10px 12px; margin: 16px 0 0; }
 .form-actions { display: flex; gap: 8px; margin-top: 20px; }

@@ -63,7 +63,10 @@
 
   // UTF-8 safe base64 (dataset text contains characters like ± and ≥).
   function toBase64(text) {
-    var bytes = new TextEncoder().encode(text), bin = "";
+    return bytesToBase64(new TextEncoder().encode(text));
+  }
+  function bytesToBase64(bytes) {
+    var bin = "";
     for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return btoa(bin);
   }
@@ -95,6 +98,38 @@
       if ((err.status === 409 || err.status === 422) && !retried) return commit(change, message, true);
       throw err;
     });
+  }
+
+  // ---------- Images ----------
+  // Images are stored beside datasets.json: dataset.image is "data/images/<id>.png",
+  // relative to the site root, which is the folder two levels above CMS.path.
+  var IMAGE_TYPES = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+  var IMAGE_MAX = 5 * 1024 * 1024;
+  var SITE_ROOT = CMS.path.replace(/[^/]*\/[^/]*$/, "");
+
+  function fileSha(repoFile) {
+    return gh("GET", repoPath() + "/contents/" + repoFile + "?ref=" + encodeURIComponent(state.branch))
+      .then(function (file) { return file.sha; })
+      .catch(function (err) { if (err.status === 404) return null; throw err; });
+  }
+
+  function uploadImage(id, file) {
+    var image = "data/images/" + id + "." + IMAGE_TYPES[file.type];
+    var repoFile = SITE_ROOT + image;
+    return Promise.all([file.arrayBuffer(), fileSha(repoFile)]).then(function (res) {
+      var body = { message: "CMS: image " + id, content: bytesToBase64(new Uint8Array(res[0])), branch: state.branch };
+      if (res[1]) body.sha = res[1];
+      return gh("PUT", repoPath() + "/contents/" + repoFile, body);
+    }).then(function () { return image; });
+  }
+
+  // Best effort: a leftover image file is harmless, so a failure here is not an error.
+  function deleteImage(image, id) {
+    if (!image) return Promise.resolve();
+    var repoFile = SITE_ROOT + image;
+    return fileSha(repoFile).then(function (sha) {
+      if (sha) return gh("DELETE", repoPath() + "/contents/" + repoFile, { message: "CMS: remove image " + id, sha: sha, branch: state.branch });
+    }).catch(function () { /* ignore */ });
   }
 
   function today() {
@@ -194,6 +229,7 @@
       commit(function (items) {
         return items.filter(function (x) { return x.id !== del; });
       }, "CMS: delete " + del).then(function (items) {
+        deleteImage(d.image, del);
         saved(items, "Deleted “" + d.title + "”.");
       }).catch(function (err) { e.target.disabled = false; alert(err.message); });
     }
@@ -216,8 +252,37 @@
     $("attrs").appendChild(row);
   }
 
+  function showPreview(src) {
+    $("image-preview").src = src || "";
+    $("image-preview").hidden = !src;
+  }
+
+  f.image.addEventListener("change", function () {
+    var file = f.image.files[0];
+    $("form-error").hidden = true;
+    if (!file) { showPreview(state.image); return; }
+    var problem = !IMAGE_TYPES[file.type] ? "The image must be a PNG, JPEG or WebP file." :
+      file.size > IMAGE_MAX ? "The image is larger than 5 MB. Please export a smaller one." : "";
+    if (problem) {
+      f.image.value = "";
+      showPreview(state.image);
+      $("form-error").textContent = problem;
+      $("form-error").hidden = false;
+      return;
+    }
+    f.imageRemove.checked = false;
+    var reader = new FileReader();
+    reader.onload = function () { showPreview(reader.result); };
+    reader.readAsDataURL(file);
+  });
+  f.imageRemove.addEventListener("change", function () {
+    if (f.imageRemove.checked) f.image.value = "";
+    showPreview(f.imageRemove.checked ? "" : state.image);
+  });
+
   function openForm(d) {
     state.editing = d ? d.id : null;
+    state.image = d && d.image ? d.image + "?v=" + encodeURIComponent(d.updated || "") : "";
     form.reset();
     $("form-error").hidden = true;
     $("attrs").innerHTML = "";
@@ -242,6 +307,8 @@
     } else {
       attrRow();
     }
+    showPreview(state.image);
+    $("image-remove-wrap").hidden = !(d && d.image);
     show("form");
     f.title.focus();
   }
@@ -252,6 +319,10 @@
     f.id.value = f.title.value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
   });
   f.id.addEventListener("input", function () { f.id.dataset.touched = "1"; });
+
+  function current() {
+    return state.editing ? state.items.filter(function (x) { return x.id === state.editing; })[0] : null;
+  }
 
   function readForm() {
     var bbox = [0, 1, 2, 3].map(function (i) { return f["bbox" + i].value; });
@@ -272,6 +343,7 @@
       features: f.features.value === "" ? 0 : Number(f.features.value),
       size: f.size.value,
       bbox: hasBbox ? bbox : null,
+      image: current() && !f.imageRemove.checked ? current().image : "",
       attributes: Array.prototype.map.call($("attrs").children, function (row) {
         var a = {};
         row.querySelectorAll("input").forEach(function (inp) { a[inp.getAttribute("data-k")] = inp.value.trim(); });
@@ -293,18 +365,30 @@
       return;
     }
     record.updated = today();
+    if (!id && state.items.some(function (x) { return x.id === record.id; })) {
+      $("form-error").textContent = 'A dataset with id "' + record.id + '" already exists.';
+      $("form-error").hidden = false;
+      return;
+    }
+    var oldImage = (current() || {}).image || "";
+    var file = f.image.files[0];
     btn.disabled = true;
-    commit(function (items) {
-      if (id) {
-        var i = items.findIndex(function (x) { return x.id === id; });
-        if (i < 0) throw new Error("This dataset was deleted in the meantime. Reload the page.");
-        items[i] = record;
-      } else {
-        if (items.some(function (x) { return x.id === record.id; })) throw new Error('A dataset with id "' + record.id + '" already exists.');
-        items.push(record);
-      }
-      return items;
-    }, "CMS: " + (id ? "update " : "add ") + record.id).then(function (items) {
+    // Upload the image first, so datasets.json never points at a file that isn't there.
+    (file ? uploadImage(record.id, file) : Promise.resolve(record.image)).then(function (image) {
+      record.image = image;
+      return commit(function (items) {
+        if (id) {
+          var i = items.findIndex(function (x) { return x.id === id; });
+          if (i < 0) throw new Error("This dataset was deleted in the meantime. Reload the page.");
+          items[i] = record;
+        } else {
+          if (items.some(function (x) { return x.id === record.id; })) throw new Error('A dataset with id "' + record.id + '" already exists.');
+          items.push(record);
+        }
+        return items;
+      }, "CMS: " + (id ? "update " : "add ") + record.id);
+    }).then(function (items) {
+      if (oldImage && oldImage !== record.image) deleteImage(oldImage, record.id);
       saved(items, "Saved “" + record.title + "”.");
     }).catch(function (err) {
       $("form-error").textContent = err.message;

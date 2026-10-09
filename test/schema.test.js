@@ -17,6 +17,7 @@ test("normalises a minimal dataset", () => {
   assert.equal(d.price, "Hubungi kami");
   assert.equal(d.published, true);
   assert.equal(d.bbox, null);
+  assert.equal(d.image, "");
   assert.ok(!("extra" in d));
 });
 
@@ -31,9 +32,18 @@ test("rejects invalid datasets", () => {
     { id: "ok", title: "T", category: "C", features: 1.5 },
     { id: "ok", title: "T", category: "C", geometry: "Blob" },
     { id: "ok", title: "T", category: "C", attributes: [{ type: "Text" }] },
+    { id: "ok", title: "T", category: "C", image: "javascript:alert(1)" },
+    { id: "ok", title: "T", category: "C", image: "https://example.com/a.png" },
+    { id: "ok", title: "T", category: "C", image: "data/images/../../admin.png" },
+    { id: "ok", title: "T", category: "C", image: "data/images/a.svg" },
   ]) {
     assert.throws(() => validate(d), Error, JSON.stringify(d));
   }
+});
+
+test("accepts a coverage image path", () => {
+  assert.equal(validate({ id: "a", title: "T", category: "C", image: "data/images/a-b.png" }).image, "data/images/a-b.png");
+  assert.equal(validate({ id: "a", title: "T", category: "C", image: "data/images/a.jpg" }).image, "data/images/a.jpg");
 });
 
 test("rejects duplicate ids and non-arrays", () => {

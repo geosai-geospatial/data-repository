@@ -8,7 +8,7 @@
   var CMS = window.SITE.cms;
   var TOKEN_KEY = "geosai-cms-token";
   var $ = function (id) { return document.getElementById(id); };
-  var state = { items: [], links: {}, editing: null, token: null, branch: CMS.branch };
+  var state = { items: [], links: {}, editing: null, token: null, branch: CMS.branch, layer: null, mapFile: null };
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -279,6 +279,7 @@
   f.image.addEventListener("change", function () {
     var file = f.image.files[0];
     $("form-error").hidden = true;
+    if (file) clearMap();
     if (!file) { showPreview(state.image); return; }
     var problem = !IMAGE_TYPES[file.type] ? "The image must be a PNG, JPEG or WebP file." :
       file.size > IMAGE_MAX ? "The image is larger than 5 MB. Please export a smaller one." : "";
@@ -295,8 +296,151 @@
     reader.readAsDataURL(file);
   });
   f.imageRemove.addEventListener("change", function () {
-    if (f.imageRemove.checked) f.image.value = "";
+    if (f.imageRemove.checked) { f.image.value = ""; clearMap(); }
     showPreview(f.imageRemove.checked ? "" : state.image);
+  });
+
+  // ---------- Coverage map from data ----------
+  // The GeoJSON/shapefile is read and drawn in this browser (staticmap.js); the
+  // finished PNG takes the place of an uploaded coverage image when saving.
+  var basemap = null;
+  function loadBasemap() {
+    basemap = basemap || fetch("data/basemap.json").then(function (r) {
+      if (!r.ok) throw new Error("The basemap could not be loaded (HTTP " + r.status + ").");
+      return r.json();
+    }).catch(function (err) { basemap = null; throw err; });
+    return basemap;
+  }
+
+  function mapStatus(text, isError) {
+    $("map-status").textContent = text;
+    $("map-status").className = "small" + (isError ? " error" : "");
+    $("map-status").hidden = !text;
+  }
+
+  // Drops the generated map (not the loaded data), e.g. when an image file is picked instead.
+  function clearMap() {
+    if (!state.mapFile) return;
+    state.mapFile = null;
+    $("map-download").hidden = true;
+    mapStatus(state.layer ? "Map discarded. Click “Make map” to draw it again." : "");
+  }
+
+  function resetMapMaker() {
+    state.layer = null;
+    state.mapFile = null;
+    $("map-file").value = "";
+    $("map-options").hidden = true;
+    $("map-download").hidden = true;
+    mapStatus("");
+  }
+
+  function fmt(n) { return Number(n).toLocaleString("id-ID"); }
+
+  $("map-file").addEventListener("change", function () {
+    var input = this;
+    state.layer = null;
+    state.mapFile = null;
+    $("map-options").hidden = true;
+    $("map-download").hidden = true;
+    if (!input.files.length) { mapStatus(""); return; }
+    mapStatus("Reading " + input.files[0].name + "…");
+    window.StaticMap.load(input.files).then(function (layer) {
+      state.layer = layer;
+      var b = layer.bbox.map(function (v) { return v.toFixed(3); });
+      mapStatus(fmt(layer.features.length) + " features · " + layer.geometry + " · " + layer.fields.length + " fields · " +
+        layer.crs + " · extent " + b[0] + ", " + b[1] + " to " + b[2] + ", " + b[3]);
+      var options = window.StaticMap.categoryFields(layer);
+      $("map-field").innerHTML = '<option value="">One colour</option>' + options.map(function (n) {
+        return '<option value="' + esc(n) + '">' + esc(n) + "</option>";
+      }).join("");
+      $("map-title").value = f.title.value.trim() || input.files[0].name.replace(/\.[^.]+$/, "");
+      $("map-layer").value = f.title.value.trim() || "Areal data";
+      delete $("map-layer").dataset.touched;
+      $("map-options").hidden = false;
+    }).catch(function (err) {
+      mapStatus(err.message || "The file could not be read.", true);
+    });
+  });
+
+  $("map-layer").addEventListener("input", function () { this.dataset.touched = "1"; });
+  $("map-field").addEventListener("change", function () {
+    if ($("map-layer").dataset.touched) return;
+    $("map-layer").value = this.value || f.title.value.trim() || "Areal data";
+  });
+
+  function toBlob(canvas, type, quality) {
+    return new Promise(function (resolve) { canvas.toBlob(resolve, type, quality); });
+  }
+
+  $("btn-map-make").addEventListener("click", function () {
+    var btn = this, layer = state.layer;
+    if (!layer) return;
+    btn.disabled = true;
+    mapStatus("Drawing the map…");
+    var canvas = document.createElement("canvas");
+    var fonts = document.fonts ? Promise.all([document.fonts.load("400 16px Inter"), document.fonts.load("600 16px Inter"), document.fonts.load("700 16px Inter")]).catch(function () {}) : Promise.resolve();
+    Promise.all([loadBasemap(), fonts]).then(function (res) {
+      var field = $("map-field").value;
+      var year = f.year.value.trim();
+      window.StaticMap.render(canvas, layer, res[0], {
+        title: $("map-title").value.trim() || f.title.value.trim(),
+        subtitle: [f.coverage.value.trim(), year ? "Tahun " + year : "", fmt(layer.features.length) + " fitur"].filter(Boolean).join("  ·  "),
+        field: field,
+        legendTitle: field ? $("map-layer").value.trim() || field : "",
+        layerName: field ? "" : $("map-layer").value.trim() || "Areal data",
+        source: f.source.value.trim(),
+        credit: window.SITE.name,
+        date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }),
+      });
+      // PNG keeps lines and text crisp; fall back to WebP if it is over the size limit.
+      return toBlob(canvas, "image/png").then(function (blob) {
+        return blob && blob.size <= IMAGE_MAX ? blob : toBlob(canvas, "image/webp", 0.92);
+      });
+    }).then(function (blob) {
+      if (!blob || blob.size > IMAGE_MAX) throw new Error("The map image is larger than 5 MB.");
+      var name = (state.editing || f.id.value.trim() || "map") + "." + IMAGE_TYPES[blob.type];
+      state.mapFile = new File([blob], name, { type: blob.type });
+      f.image.value = "";
+      f.imageRemove.checked = false;
+      var reader = new FileReader();
+      reader.onload = function () {
+        showPreview(reader.result);
+        $("map-download").href = reader.result;
+        $("map-download").download = name;
+        $("map-download").hidden = false;
+      };
+      reader.readAsDataURL(blob);
+      mapStatus("Map ready (" + Math.round(blob.size / 1024) + " KB). It is saved as the coverage image when you click Save.");
+    }).catch(function (err) {
+      mapStatus(err.message || "The map could not be drawn.", true);
+    }).finally(function () { btn.disabled = false; });
+  });
+
+  // Copies what the file knows into the form: extent, geometry, feature count,
+  // and attribute names/types (descriptions already typed in are kept).
+  $("btn-map-fill").addEventListener("click", function () {
+    if (!state.layer) return;
+    var sum = window.StaticMap.summary(state.layer);
+    sum.bbox.forEach(function (v, i) { f["bbox" + i].value = v; });
+    f.features.value = sum.features;
+    f.geometry.value = sum.geometry;
+    if (!f.crs.value.trim()) f.crs.value = sum.crs;
+    if (!f.format.value.trim()) f.format.value = sum.format;
+    var have = {};
+    Array.prototype.forEach.call($("attrs").children, function (row) {
+      var name = row.querySelector('[data-k="name"]').value.trim();
+      if (name) have[name] = row; else row.remove();
+    });
+    var added = 0;
+    sum.attributes.forEach(function (a) {
+      if (have[a.name]) {
+        var type = have[a.name].querySelector('[data-k="type"]');
+        if (!type.value.trim()) type.value = a.type;
+      } else { attrRow(a); added++; }
+    });
+    if (!$("attrs").children.length) attrRow();
+    mapStatus("Filled the bounding box, geometry, feature count (" + fmt(sum.features) + ") and " + added + " new attribute" + (added === 1 ? "" : "s") + ". Review them before saving.");
   });
 
   function openForm(d) {
@@ -327,6 +471,7 @@
       attrRow();
     }
     showPreview(state.image);
+    resetMapMaker();
     f.drive.value = d ? state.links[d.id] || "" : "";
     $("image-remove-wrap").hidden = !(d && d.image);
     show("form");
@@ -399,7 +544,7 @@
       return;
     }
     var oldImage = (current() || {}).image || "";
-    var file = f.image.files[0];
+    var file = f.image.files[0] || state.mapFile;
     btn.disabled = true;
     // Upload the image first, so datasets.json never points at a file that isn't there.
     (file ? uploadImage(record.id, file) : Promise.resolve(record.image)).then(function (image) {

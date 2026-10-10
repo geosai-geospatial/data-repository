@@ -23,6 +23,7 @@ Public pages ──────────────────────�
 - **Safety net.** The form validates input, and the deploy workflow checks `datasets.json` again (`scripts/validate-datasets.js`). If the file is broken, for example by a hand edit, the deploy stops and the live site keeps the last good version.
 - **Drafts.** Untick *Published* to hide a dataset from the catalog. Drafts are still in `datasets.json`, which is public in a public repository, so don't put secrets in them.
 - **Coverage image.** Upload a PNG (or JPEG/WebP, max 5 MB) in the form; it is committed to `public/data/images/<id>.png` and shown under *Cakupan wilayah* on the detail page. Replacing or removing it, or deleting the dataset, also removes the old file.
+- **Coverage map from data.** Instead of uploading an image, pick a GeoJSON, a zipped shapefile, or the `.shp`/`.dbf`/`.prj` files under *Make the coverage map from data* and click *Make map*. The file is read and drawn in the browser (`assets/js/staticmap.js`); only the finished 1600×1000 PNG is saved, as the coverage image. The map follows standard cartographic practice: title and subtitle, an equal-area projection centred on the data, a muted Natural Earth basemap with the focus country lighter and neighbours labelled, graticule labelled in the margin (BT/LS), a legend with feature counts (one colour, or a colour-blind-safe palette by a chosen field, with small classes grouped as *Lainnya*), a scale bar and north arrow, a locator inset for small areas, and source/projection credits. Coordinates in UTM or Web Mercator (from the `.prj` or a GeoJSON `crs`) are converted to WGS 84; other projections must be exported as EPSG:4326 first. *Fill form from file* copies the bounding box, geometry, feature count and attribute names/types into the form.
 - **Google Drive link (admin only).** Each dataset can have a link to its Drive folder, shown as a *Drive ↗* shortcut in the admin list. It is stored in `cms/drive-links.json`, outside `public/`, so it is not on the website. The repository is public, though, so the file is readable on GitHub: keep every Drive folder's sharing set to **Restricted** and share it with each buyer by email.
 - **IDs.** The dataset ID is the URL slug (`dataset.html?id=…`) and is fixed after creation so links shared with buyers keep working.
 
@@ -46,11 +47,18 @@ When the token expires, generate a new one and sign in again.
 
 Styling: `public/assets/css/style.css` (brand colour is `--brand`).
 
+Basemap: `public/data/basemap.json` (countries around Indonesia, simplified from Natural Earth, public domain). To rebuild it:
+
+```sh
+curl -LO https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_0_countries.geojson
+node scripts/build-basemap.js ne_10m_admin_0_countries.geojson
+```
+
 ## Local preview and tests
 
 ```sh
 npm start        # serves public/ at http://localhost:8000
-npm test         # schema tests
+npm test         # schema and static map tests
 npm run validate # check public/data/datasets.json
 ```
 

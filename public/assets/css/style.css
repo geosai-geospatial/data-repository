@@ -425,3 +425,31 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .token-help summary { cursor: pointer; font-weight: 600; color: var(--text); }
 .token-help ol { padding-left: 20px; }
 .notice { background: var(--brand-soft); color: var(--brand-dark); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px; }
+
+/* Email: the main contact channel */
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-dark); filter: none; }
+.copy-btn {
+  font: inherit; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--brand); vertical-align: middle;
+}
+.copy-btn:hover { border-color: var(--brand); }
+.email-alt { font-size: 13px; color: var(--muted); margin: 10px 0 0; line-height: 1.6; overflow-wrap: anywhere; }
+.soon-note { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.soon-badge {
+  display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  background: #fef3c7; color: #92400e; vertical-align: middle;
+}
+.email-hero { margin-bottom: 20px; }
+.email-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
+.email-head .icon { flex: none; width: 48px; height: 48px; border-radius: 12px; display: grid; place-items: center; background: var(--brand); color: #fff; }
+.email-head .kicker { margin: 0 0 2px; }
+.email-head h2 { justify-content: flex-start; flex-wrap: wrap; font-size: 22px; margin: 0 0 6px; overflow-wrap: anywhere; }
+.email-head p { color: var(--muted); }
+.template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.template { display: flex; flex-direction: column; padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); }
+.template h3 { font-size: 15px; margin: 0 0 4px; }
+.template p { font-size: 14px; color: var(--muted); margin: 0 0 8px; flex: 1; }
+.template .gmail-link { font-size: 13px; text-align: center; margin-top: 8px; }
+.contact-card.soon { opacity: 0.85; }
+.contact-card.soon .icon { background: var(--subtle); }

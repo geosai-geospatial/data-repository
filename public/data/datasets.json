@@ -1,15 +1,16 @@
 [
   {
-    "id": "jaringan-jalan-rbi-250k",
-    "title": "Jaringan Jalan Indonesia (RBI Skala 1:250.000)",
-    "category": "Transportasi",
-    "summary": "Garis jaringan jalan seluruh Indonesia dari Peta Rupabumi Indonesia (RBI) skala 1:250.000. Gratis, langsung unduh tanpa menghubungi admin.",
+    "id": "batas-provinsi-indonesia-250k",
+    "title": "Batas Provinsi Indonesia (Peta Dasar BAKOSURTANAL 1:250.000)",
+    "category": "Administrasi",
+    "summary": "32 poligon batas provinsi seluruh Indonesia dari Peta Dasar BAKOSURTANAL skala 1:250.000, dengan nama dan kode provinsi. Gratis, langsung unduh tanpa menghubungi admin.",
     "description": [
-      "Jaringan jalan dari Peta Rupabumi Indonesia (RBI) skala 1:250.000 terbitan BAKOSURTANAL (kini Badan Informasi Geospasial), disajikan sebagai data garis untuk seluruh Indonesia.",
-      "Skala 1:250.000 cocok untuk analisis tingkat nasional, provinsi, dan kabupaten, misalnya aksesibilitas wilayah, jarak ke jalan sebagai faktor pemicu deforestasi, serta peta konteks untuk uji tuntas dan proyek karbon. Untuk analisis tingkat tapak, gunakan data skala lebih besar.",
-      "Dataset ini gratis: klik Unduh gratis untuk membuka folder unduhan. Mohon cantumkan sumber data saat digunakan."
+      "Poligon batas administrasi provinsi seluruh Indonesia yang diturunkan dari Peta Dasar BAKOSURTANAL (kini Badan Informasi Geospasial) skala 1:250.000. Berkas berisi 32 poligon, masing-masing dengan nama provinsi, kode provinsi, dan keterangan sumber.",
+      "Pembagian provinsi mengikuti kondisi sekitar tahun 2000–2002: Papua masih terbagi menjadi Irian Jaya Barat, Irian Jaya Tengah, dan Irian Jaya Timur; Banten, Bangka Belitung, Gorontalo, dan Maluku Utara sudah ada; Kepulauan Riau (masih bagian dari Riau) dan Sulawesi Barat (masih bagian dari Sulawesi Selatan) belum terbentuk. Untuk pembagian 38 provinsi saat ini, gunakan data batas administrasi terbaru.",
+      "Catatan kualitas atribut: kolom kode bernilai 0 untuk Kalimantan Barat dan Kalimantan Tengah (seharusnya 61 dan 62) dan 3329 untuk Jawa Tengah (seharusnya 33); Banten tertulis \"PROBANTEN\". Periksa dan perbaiki kolom ini sebelum melakukan join dengan data berkode BPS/Kemendagri.",
+      "Cocok sebagai peta dasar dan konteks wilayah, agregasi statistik per provinsi, dan analisis historis pada skala nasional."
     ],
-    "coverage": "Seluruh Indonesia",
+    "coverage": "Seluruh Indonesia, 32 poligon provinsi",
     "bbox": [
       95,
       -11,
@@ -17,16 +18,37 @@
       6
     ],
     "image": "",
-    "source": "Peta Rupabumi Indonesia (RBI) skala 1:250.000, BAKOSURTANAL / Badan Informasi Geospasial",
+    "source": "Peta Dasar BAKOSURTANAL skala 1:250.000",
     "year": "",
     "format": [
       "SHP"
     ],
     "crs": "",
-    "geometry": "Line",
-    "features": 0,
+    "geometry": "Polygon",
+    "features": 32,
     "size": "",
-    "attributes": [],
+    "attributes": [
+      {
+        "name": "ID",
+        "type": "Integer",
+        "description": "Nomor urut poligon (1–32)"
+      },
+      {
+        "name": "kode",
+        "type": "Integer",
+        "description": "Kode provinsi (mis. 11 Aceh, 31 DKI Jakarta); lihat catatan kualitas di deskripsi"
+      },
+      {
+        "name": "Propinsi",
+        "type": "Text",
+        "description": "Nama provinsi (huruf kapital, ejaan lama, mis. IRIAN JAYA BARAT, DI. ACEH)"
+      },
+      {
+        "name": "SUMBER",
+        "type": "Text",
+        "description": "Sumber data (Peta Dasar BAKOSURTANAL Skala 1 : 250.000)"
+      }
+    ],
     "price": "Gratis",
     "published": true,
     "free": true,

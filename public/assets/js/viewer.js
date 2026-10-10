@@ -87,7 +87,22 @@
   setBasemap($("gv-basemap").value);
   $("gv-basemap").addEventListener("change", function () { setBasemap(this.value); });
 
-  var overlay = null, canvas = null, ctx = null, image = null, gridRgba = null;
+  // A drawn grid: the whole image at reduced resolution (base), or the part
+  // in view at the resolution the zoom needs (detail).
+  var base = null, detail = null;
+  function makeLayer(grid) {
+    var lookup = GT.mercatorLookup(grid, state.info.crs);
+    var canvas = document.createElement("canvas");
+    canvas.width = lookup.width;
+    canvas.height = lookup.height;
+    var ctx = canvas.getContext("2d");
+    return {
+      grid: grid, lookup: lookup, ctx: ctx, image: ctx.createImageData(canvas.width, canvas.height),
+      rgba: new Uint8ClampedArray(grid.width * grid.height * 4), index: null,
+      overlay: new CanvasOverlay(canvas, lookup.bounds, { opacity: $("gv-opacity").value / 100 }),
+    };
+  }
+  function removeLayer(l) { if (l) map.removeLayer(l.overlay); }
 
   // ---------- Opening ----------
   var busy = false;
@@ -103,8 +118,7 @@
         onProgress: function (f) { status("Membaca " + name + "… " + Math.round(f * 100) + "%"); },
       });
     }).then(function (grid) {
-      var lookup = GT.mercatorLookup(grid, info.crs);
-      state = { info: info, grid: grid, lookup: lookup, name: name, stats: [], index: null };
+      state = { info: info, grid: grid, name: name, stats: [], index: null };
       showRaster();
       track(isSample ? "lihat-geotiff/contoh" : "lihat-geotiff/buka", isSample ? "Lihat GeoTIFF: contoh" : "Lihat GeoTIFF: buka file");
     }).catch(function (err) {
@@ -144,8 +158,11 @@
 
   function clearData() {
     state = null;
-    if (overlay) { map.removeLayer(overlay); overlay = null; }
-    canvas = ctx = image = gridRgba = null;
+    removeLayer(base);
+    removeLayer(detail);
+    base = detail = null;
+    detailSeq++;
+    $("gv-loading").hidden = true;
     map.closePopup();
     $("gv-options").hidden = true;
     $("gv-summary").hidden = true;
@@ -160,15 +177,9 @@
   function bandLabel(b, i) { return "Band " + (b.index + 1) + (b.name ? " · " + b.name : ""); }
 
   function showRaster() {
-    var s = state, info = s.info, grid = s.grid;
-    canvas = document.createElement("canvas");
-    canvas.width = s.lookup.width;
-    canvas.height = s.lookup.height;
-    ctx = canvas.getContext("2d");
-    image = ctx.createImageData(canvas.width, canvas.height);
-    gridRgba = new Uint8ClampedArray(grid.width * grid.height * 4);
-    overlay = new CanvasOverlay(canvas, s.lookup.bounds, { opacity: $("gv-opacity").value / 100 }).addTo(map);
-    map.fitBounds(s.lookup.bounds, { maxZoom: 18 });
+    var s = state, info = s.info;
+    base = makeLayer(s.grid);
+    base.overlay.addTo(map);
 
     // Band lists.
     var opts = info.bands.map(function (b, i) { return '<option value="' + i + '">' + esc(bandLabel(b, i)) + "</option>"; }).join("");
@@ -192,7 +203,11 @@
     $("gv-options").hidden = false;
     $("gv-summary").hidden = false;
     $("gv-placeholder").hidden = true;
-    status(s.name + ": " + fmt(info.width) + " × " + fmt(info.height) + " piksel, " + fmt(n) + " band.");
+    var empty = s.grid.bands.every(function (b) { for (var i = 0; i < b.length; i++) if (b[i] === b[i]) return false; return true; });
+    status(s.name + ": " + fmt(info.width) + " × " + fmt(info.height) + " piksel, " + fmt(n) + " band." +
+      (empty ? " Pada tampilan seluruh file belum ada piksel bernilai yang terambil (data jarang atau sebagian besar NoData). Perbesar peta ke lokasi data untuk melihatnya." : ""));
+    // Fitting the view fires moveend, which loads detail if the zoom needs it.
+    map.fitBounds(base.lookup.bounds, { maxZoom: 18 });
   }
 
   function facts() {
@@ -211,7 +226,7 @@
     $("gv-facts").innerHTML = rows.map(function (r) { return "<div><dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd></div>"; }).join("");
     var note = $("gv-note");
     if (grid.width < info.width) {
-      note.textContent = "Ditampilkan pada " + fmt(grid.width) + " × " + fmt(grid.height) + " piksel (diperkecil " + fmt(Math.round(info.width / grid.width * 10) / 10) + "×) agar muat di memori browser. Nilai piksel saat diklik berasal dari resolusi ini.";
+      note.textContent = "File ini besar, jadi tampilan penuhnya diperkecil " + fmt(Math.round(info.width / grid.width * 10) / 10) + "× (" + fmt(grid.width) + " × " + fmt(grid.height) + " piksel). Perbesar peta untuk melihat detail: bagian yang tampak dibaca ulang dengan resolusi yang lebih tinggi, hingga resolusi asli.";
       note.hidden = false;
     } else {
       note.hidden = true;
@@ -269,13 +284,15 @@
     if (!state.stats[i]) state.stats[i] = GT.stats(state.grid.bands[i]) || { min: 0, max: 0, p2: 0, p98: 0 };
     return state.stats[i];
   }
-  function indexValues() {
+  // Index values of a layer (base by default); statistics come from the base.
+  function indexValues(layer) {
+    layer = layer || base;
     var a = Number($("gv-ia").value), b = Number($("gv-ib").value), key = a + "/" + b;
-    if (!state.index || state.index.key !== key) {
-      var values = GT.normalizedDifference(state.grid.bands[a], state.grid.bands[b]);
-      state.index = { key: key, values: values, stats: GT.stats(values) || { min: -1, max: 1, p2: -1, p98: 1 } };
+    if (!layer.index || layer.index.key !== key) {
+      var values = GT.normalizedDifference(layer.grid.bands[a], layer.grid.bands[b]);
+      layer.index = { key: key, values: values, stats: layer === base ? GT.stats(values) || { min: -1, max: 1, p2: -1, p98: 1 } : null };
     }
-    return state.index;
+    return layer.index;
   }
 
   // The channels whose range can be set: [label, stats] per channel.
@@ -324,7 +341,6 @@
     if (m === "rgb") return { mode: "rgb", bands: [Number($("gv-r").value), Number($("gv-g").value), Number($("gv-b").value)], ranges: r };
     var s = { mode: m, ramp: $("gv-ramp").value, reverse: $("gv-reverse").checked, min: r[0][0], max: r[0][1] };
     if (m === "single") s.band = Number($("gv-band").value);
-    else s.values = indexValues().values;
     return s;
   }
 
@@ -337,6 +353,13 @@
     $("gv-legend-max").textContent = num(s.max);
   }
 
+  function draw(l, s) {
+    if (s.mode === "index") s.values = indexValues(l).values;
+    GT.render(l.grid, s, l.rgba);
+    GT.project(l.lookup, l.rgba, l.image.data);
+    l.ctx.putImageData(l.image, 0, 0);
+  }
+
   var pending = false;
   function repaint() {
     if (!state || pending) return;
@@ -347,9 +370,7 @@
       var s = style();
       if (s.ranges && s.ranges.some(function (r) { return !(r[0] === r[0] && r[1] === r[1]); })) return;
       if (s.min !== undefined && !(s.min === s.min && s.max === s.max)) return;
-      GT.render(state.grid, s, gridRgba);
-      GT.project(state.lookup, gridRgba, image.data);
-      ctx.putImageData(image, 0, 0);
+      [base, detail].forEach(function (l) { if (l) draw(l, s); });
       legend(s);
     });
   }
@@ -367,19 +388,90 @@
   ["gv-ramp", "gv-reverse"].forEach(function (id) { $(id).addEventListener("change", repaint); });
   $("gv-stretch").addEventListener("change", function () { fillRanges(); repaint(); });
   $("gv-ranges").addEventListener("input", function () { $("gv-stretch").value = "manual"; repaint(); });
-  $("gv-opacity").addEventListener("input", function () { if (overlay) overlay.setOpacity(this.value / 100); });
+  $("gv-opacity").addEventListener("input", function () {
+    var o = this.value / 100;
+    if (detail) detail.overlay.setOpacity(o);
+    if (base) base.overlay.setOpacity(detail && covers(detail) ? 0 : o);
+  });
+
+  // ---------- Detail on zoom ----------
+  // The base grid is at most 2048 px across, so a large file is coarse when
+  // zoomed in. After each move, if the view needs more pixels than the base
+  // has, the part in view (plus a margin) is read again at screen resolution.
+  var detailSeq = 0, detailTimer = null;
+  function viewBox() {
+    var b = map.getBounds();
+    return [b.getWest(), Math.max(b.getSouth(), -85), b.getEast(), Math.min(b.getNorth(), 85)];
+  }
+  // Whether a detail layer covers the whole view.
+  function covers(l) {
+    var w = GT.pixelWindow(state.info, viewBox()), d = l.grid.window;
+    return !w || (w[0] >= d[0] && w[1] >= d[1] && w[2] <= d[2] && w[3] <= d[3]);
+  }
+  function showDetail(l) {
+    removeLayer(detail);
+    detail = l;
+    var o = $("gv-opacity").value / 100;
+    if (l) { l.overlay.addTo(map); l.overlay.setOpacity(o); }
+    // The base would show its coarse pixels through NoData holes in the detail.
+    base.overlay.setOpacity(l && covers(l) ? 0 : o);
+  }
+  function loadDetail() {
+    if (!state || busy) return;
+    var info = state.info, win = GT.pixelWindow(info, viewBox());
+    var size = map.getSize(), want = Math.min(GT.LIMITS.side, Math.ceil(Math.max(size.x, size.y) * Math.min(2, window.devicePixelRatio || 1)));
+    var baseScale = info.width / state.grid.width; // file pixels per base pixel
+    if (!win || Math.max(win[2] - win[0], win[3] - win[1]) / baseScale >= want / 1.5) {
+      // The base is sharp enough here (or the view is off the image).
+      detailSeq++;
+      $("gv-loading").hidden = true;
+      if (detail) showDetail(null);
+      return;
+    }
+    var need = Math.max(1, Math.max(win[2] - win[0], win[3] - win[1]) / want); // file pixels per screen pixel
+    if (detail && covers(detail)) {
+      var d = detail.grid.window, have = Math.max(d[2] - d[0], d[3] - d[1]) / Math.max(detail.grid.width, detail.grid.height);
+      if (have <= need * 1.5) return; // already sharp enough
+    }
+    if (detail) base.overlay.setOpacity(covers(detail) ? 0 : $("gv-opacity").value / 100);
+    // A margin of half the view on each side, within the grid limit.
+    var mx = (win[2] - win[0]) / 2, my = (win[3] - win[1]) / 2;
+    var padded = [win[0] - mx, win[1] - my, win[2] + mx, win[3] + my];
+    var seq = ++detailSeq;
+    $("gv-loading").hidden = false;
+    GT.readGrid(info, {
+      window: padded,
+      maxSide: Math.min(GT.LIMITS.side, Math.ceil(want * 2)),
+      cancelled: function () { return seq !== detailSeq; },
+    }).then(function (grid) {
+      if (seq !== detailSeq || !state) return;
+      var l = makeLayer(grid);
+      showDetail(l);
+      draw(l, style());
+      $("gv-loading").hidden = true;
+    }).catch(function (err) {
+      if (seq !== detailSeq) return;
+      if (window.console) console.error(err);
+      $("gv-loading").hidden = true;
+    });
+  }
+  map.on("moveend", function () {
+    clearTimeout(detailTimer);
+    detailTimer = setTimeout(loadDetail, 200);
+  });
 
   // ---------- Pixel values ----------
   map.on("click", function (e) {
     if (!state) return;
-    var i = GT.gridIndexAt(state.grid, state.info.crs, e.latlng.lng, e.latlng.lat);
+    var l = detail, i = l ? GT.gridIndexAt(l.grid, state.info.crs, e.latlng.lng, e.latlng.lat) : -1;
+    if (i < 0) { l = base; i = GT.gridIndexAt(l.grid, state.info.crs, e.latlng.lng, e.latlng.lat); }
     if (i < 0) return;
     var rows = state.info.bands.map(function (b, k) {
-      var v = state.grid.bands[k][i];
+      var v = l.grid.bands[k][i];
       return "<tr><th>" + esc(bandLabel(b, k)) + "</th><td>" + (v === v ? esc(num(v)) : "NoData") + "</td></tr>";
     });
     if (mode() === "index") {
-      var v = indexValues().values[i];
+      var v = indexValues(l).values[i];
       rows.push("<tr><th>Indeks (A − B) / (A + B)</th><td>" + (v === v ? esc(num(Math.round(v * 1000) / 1000)) : "—") + "</td></tr>");
     }
     L.popup({ maxWidth: 320 }).setLatLng(e.latlng).setContent(

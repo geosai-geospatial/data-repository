@@ -1,7 +1,8 @@
 // Static map maker: reads a GeoJSON file or a shapefile in the browser and draws
 // a print-style coverage map (title, legend, scale bar, north arrow, graticule,
 // locator inset, credits) on a canvas. Used by the admin form to make the
-// coverage image; nothing is uploaded except the finished PNG.
+// coverage image, and by the public map maker (buat-peta.html); nothing is
+// uploaded anywhere: the admin saves only the finished PNG.
 //
 // Shared by the admin page (browser) and the tests (Node), like schema.js.
 (function (root, factory) {
@@ -383,6 +384,102 @@
     return out;
   }
 
+  // Numeric fields with more values than there are category colours are shown
+  // as ranges (graduated colours) instead of categories.
+  function fieldKind(layer, field) {
+    var seen = {}, n = 0, numeric = true;
+    for (var i = 0; i < layer.features.length; i++) {
+      var v = layer.features[i].props[field];
+      if (v == null || v === "") continue;
+      if (typeof v !== "number" || !isFinite(v)) numeric = false;
+      if (!seen[v]) { seen[v] = true; n++; }
+    }
+    return numeric && n > PALETTE.length ? "number" : "category";
+  }
+
+  // Fields a map can be coloured by: category fields plus numeric fields.
+  function fieldOptions(layer) {
+    var cats = categoryFields(layer);
+    return layer.fields.map(function (f) {
+      var kind = fieldKind(layer, f.name);
+      return kind === "number" || cats.indexOf(f.name) >= 0 ? { name: f.name, kind: kind } : null;
+    }).filter(Boolean);
+  }
+
+  // Sequential light-to-dark blues (ColorBrewer YlGnBu, colour-blind safe),
+  // without its lightest step, which would vanish on the basemap.
+  var SEQUENTIAL = ["#c7e9b4", "#7fcdbb", "#41b6c4", "#2c7fb8", "#253494"];
+
+  function formatNumber(v) {
+    var a = Math.abs(v);
+    var digits = a >= 100 || Number.isInteger(v) ? 0 : a >= 1 ? 2 : 3;
+    return v.toLocaleString("id-ID", { maximumFractionDigits: digits });
+  }
+
+  // Up to five quantile classes (about the same number of features in each),
+  // labelled with the smallest and largest value actually in the class. Each
+  // class holds its lower bound in `lo`; features without a number are grey.
+  function ranges(layer, field) {
+    var vals = [], blank = 0;
+    layer.features.forEach(function (f) {
+      var v = f.props[field];
+      if (typeof v === "number" && isFinite(v)) vals.push(v); else blank++;
+    });
+    vals.sort(function (a, b) { return a - b; });
+    var out = [];
+    if (vals.length) {
+      // Where a quantile falls inside a run of equal values (skewed data, many
+      // zeros), the break moves to the next larger value.
+      var k = SEQUENTIAL.length, los = [vals[0]];
+      for (var i = 1, j = 0; i < k; i++) {
+        j = Math.max(j, Math.floor(i * vals.length / k));
+        while (j < vals.length && vals[j] <= los[los.length - 1]) j++;
+        if (j < vals.length) los.push(vals[j]);
+      }
+      out = los.map(function (lo, j) {
+        var color = SEQUENTIAL[los.length === 1 ? SEQUENTIAL.length - 1 : Math.round(j * (SEQUENTIAL.length - 1) / (los.length - 1))];
+        return { lo: lo, color: color, count: 0, min: Infinity, max: -Infinity };
+      });
+      var c = 0;
+      vals.forEach(function (v) {
+        while (c + 1 < out.length && v >= out[c + 1].lo) c++;
+        out[c].count++;
+        if (v < out[c].min) out[c].min = v;
+        if (v > out[c].max) out[c].max = v;
+      });
+      out.forEach(function (cl) {
+        cl.value = cl.label = formatNumber(cl.min) + (cl.max > cl.min ? " – " + formatNumber(cl.max) : "");
+      });
+    }
+    if (blank) out.push({ value: "*", label: "Tanpa nilai", color: OTHER, count: blank });
+    return out;
+  }
+
+  // Classes for `field`: ranges for numbers, categories otherwise.
+  function classify(layer, field) {
+    return field && fieldKind(layer, field) === "number" ? ranges(layer, field) : categories(layer, field);
+  }
+
+  // Colour of one feature under classes from categories() or ranges().
+  function colorer(classes, field) {
+    if (!field) return function () { return SINGLE; };
+    var steps = classes.filter(function (c) { return c.lo != null; });
+    if (steps.length) {
+      return function (f) {
+        var v = f.props[field];
+        if (typeof v !== "number" || !isFinite(v)) return OTHER;
+        for (var i = steps.length - 1; i > 0; i--) if (v >= steps[i].lo) return steps[i].color;
+        return steps[0].color;
+      };
+    }
+    var colorOf = {};
+    classes.forEach(function (c) { colorOf[c.value] = c.color; });
+    return function (f) {
+      var v = f.props[field];
+      return colorOf[v == null || v === "" ? "" : String(v)] || OTHER;
+    };
+  }
+
   // A "nice" number (1, 2 or 5 × 10ⁿ) not larger than x.
   function niceFloor(x) {
     var p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p;
@@ -659,14 +756,7 @@
   }
 
   function drawData(ctx, view, layer, classes, field) {
-    var colorOf = {};
-    classes.forEach(function (c) { colorOf[c.value] = c.color; });
-    function color(f) {
-      if (!field) return SINGLE;
-      var v = f.props[field];
-      var key = v == null || v === "" ? "" : String(v);
-      return colorOf[key] || OTHER;
-    }
+    var color = colorer(classes, field);
     // Polygons first, then lines, then points on top. Within polygons, draw the
     // largest classes first so small classes are not hidden beneath them.
     var rank = {};
@@ -851,6 +941,8 @@
     var fr = view.frame, vb = view.bbox;
     var share = Math.max((vb[2] - vb[0]) / (region[2] - region[0]), (vb[3] - vb[1]) / (region[3] - region[1]));
     if (share > 0.4) return null;
+    // Data outside the region: the inset would show nothing useful.
+    if (vb[2] < region[0] || vb[0] > region[2] || vb[3] < region[1] || vb[1] > region[3]) return null;
     var w = 300, h = 140, x = fr.x + fr.w - w - 14, y = fr.y + 14;
     var inner = { x: x + 1, y: y + 1, w: w - 2, h: h - 2 };
     var lv = makeView(region, inner, { pad: 0.02 });
@@ -917,7 +1009,7 @@
     }
 
     var view = makeView(layer.bbox, frame);
-    var classes = categories(layer, opts.field);
+    var classes = classify(layer, opts.field);
     var focus = focusCountry(layer, basemap);
     drawBasemap(ctx, view, basemap, focus);
     var lines = drawGraticule(ctx, view);
@@ -984,6 +1076,10 @@
     tmInverse: tmInverse,
     categoryFields: categoryFields,
     categories: categories,
+    fieldKind: fieldKind,
+    fieldOptions: fieldOptions,
+    ranges: ranges,
+    classify: classify,
     niceFloor: niceFloor,
     gridStep: gridStep,
     formatDeg: formatDeg,

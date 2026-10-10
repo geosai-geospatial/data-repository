@@ -8,6 +8,7 @@ Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon 
 - `services.html`: the services, how an engagement runs, and a services FAQ. The content is plain HTML; edit it directly. Every button with a `data-service="…"` attribute opens a pre-filled consultation email naming that service (an empty value is a general consultation); without JavaScript it falls back to `contact.html`.
 - `dataset.html?id=…`: dataset detail.
 - `contact.html`: email templates (consultation, data questions, samples, orders, invoices) and the FAQ.
+- `buat-peta.html`: free public map maker (*Buat Peta* in the menu). See below.
 
 Live site: https://geosai-geospatial.github.io/data-repository/
 
@@ -35,11 +36,20 @@ Public pages ──────────────────────�
 - **Free datasets.** Tick *Free* and paste a public download link (usually the Drive folder, shared as *Anyone with the link – Viewer*). The catalog then shows a *Gratis* badge and filter, the price reads *Gratis*, and the detail page replaces the email/order panel with an *Unduh gratis* button that opens the link, so visitors download without contacting you. The link is stored in `datasets.json`, so it is public.
 - **IDs.** The dataset ID is the URL slug (`dataset.html?id=…`) and is fixed after creation so links shared with buyers keep working.
 
+## Public map maker
+
+`buat-peta.html` lets any visitor make a map without signing up: pick a GeoJSON (or a zipped shapefile), choose a field to colour by, adjust the title, legend title, subtitle and source, and download a 1600×1000 PNG. It is a way to bring people to the site and show what GeoSAI does; the page ends with a consultation/catalog call to action, and every map carries *Dibuat dengan GeoSAI · <site address>* in its credits.
+
+- **Nothing is uploaded.** The file is read and drawn in the visitor's browser by the same renderer as the admin's coverage maps (`assets/js/staticmap.js`, driven by `assets/js/mapmaker.js`). Files over 50 MB are refused.
+- **Colouring.** Text fields (and number fields with 7 or fewer distinct values) are categories, as in the admin. Number fields with more values are split into up to 5 quantile classes, light to dark (ColorBrewer YlGnBu), labelled with each class's real minimum and maximum; features without a number are grey (*Tanpa nilai*). Fields with a different text value on every feature (IDs, names) are not offered.
+- **Sample data.** *Coba dengan data contoh* loads `data/contoh-kota.geojson`: 37 large Indonesian cities with island and approximate population (thousands, SP2020, rounded). It is a demo, not a dataset for sale.
+- **Usage counts.** Loading the sample and downloading a PNG are sent to GoatCounter as events (`buat-peta/contoh`, `buat-peta/unduh`), so the Visitors panel's top pages show how often the tool is actually used.
+
 ## Visitor stats
 
 The admin page opens with a **Visitors** panel: visitors today, in the last 7 and 30 days (each compared with the period before), a bar per day for the last 30 days, the top pages, and where visitors come from.
 
-GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`) loads GoatCounter's counting script in its `<head>`:
+GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`) loads GoatCounter's counting script in its `<head>`:
 
 ```html
 <script data-goatcounter="https://geosai.goatcounter.com/count"

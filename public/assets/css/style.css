@@ -219,7 +219,6 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .thumb.t-pertambangan { background: #f6efe2; color: #8a5a00; }
 .thumb.t-perkebunan { background: #eef5e4; color: #4b6b12; }
 .thumb.t-administrasi { background: #e9eef8; color: #2f4f8a; }
-.thumb.t-transportasi { background: #f1eef7; color: #5b3f8a; }
 .thumb .badge-free { position: absolute; top: 12px; right: 12px; }
 
 .badge {

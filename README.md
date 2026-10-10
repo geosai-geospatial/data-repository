@@ -9,6 +9,7 @@ Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon 
 - `dataset.html?id=…`: dataset detail.
 - `contact.html`: email templates (consultation, data questions, samples, orders, invoices) and the FAQ.
 - `buat-peta.html`: free public map maker (*Buat Peta* in the menu). See below.
+- `konversi-data.html`: free public data converter (*Konversi* in the menu). See below.
 
 Live site: https://geosai-geospatial.github.io/data-repository/
 
@@ -45,18 +46,27 @@ Public pages ──────────────────────�
 - **Sample data.** *Coba dengan data contoh* loads `data/contoh-kota.geojson`: 37 large Indonesian cities with island and approximate population (thousands, SP2020, rounded). It is a demo, not a dataset for sale.
 - **Usage counts.** Loading the sample and downloading a PNG are sent to GoatCounter as events (`buat-peta/contoh`, `buat-peta/unduh`), so the Visitors panel's top pages show how often the tool is actually used.
 
+## Public data converter
+
+`konversi-data.html` lets any visitor convert spatial data without signing up. It reads a shapefile (zipped, or the `.shp`/`.dbf`/`.prj` files picked together), GeoJSON, KML/KMZ, GPX or CSV (longitude/latitude columns, also named *bujur/lintang*, *lon/lat* or *x/y*, or a WKT column), and writes GeoJSON, a zipped shapefile (`.shp`, `.shx`, `.dbf`, `.prj`, `.cpg`), KML or CSV. Output is always WGS 84; UTM and Web Mercator input is converted.
+
+- **GeoSAI does not store the data.** The file is read and written in the visitor's browser by `assets/js/geoconvert.js`, running in a worker (`assets/js/geoconvertworker.js`) so the page stays responsive; `assets/js/converter.js` is the page. Nothing is uploaded: the page's Content-Security-Policy only allows connections to the site itself (the sample file) and GoatCounter, so a file cannot be sent anywhere even by mistake. The page states this at the top and in full under *Pernyataan privasi data*; keep that statement true if you change the page (no upload endpoints, no logging of file names or contents).
+- **Size limit, from the browser's memory.** Everything is held in the tab's memory. Converting a text format takes about 6–8× the file size at peak (measured: a 100 MB GeoJSON uses ~0.7 GB), desktop browsers give a tab about 4 GB and phones about 1–1.5 GB, and one JavaScript string tops out at ~512 million characters. So the limit is 250 MB on a computer, 150 MB with 4 GB RAM, 75 MB with 2 GB or less, 100 MB on phones/tablets with 6 GB+ RAM and 50 MB on other phones (`sizeLimit()` in `geoconvert.js`, using `navigator.deviceMemory` where the browser reports it). A `.zip`/`.kmz` may unzip to 2× the limit. Output is built in ~1 MB chunks and handed to a Blob, so it never needs one giant string.
+- **Format rules it handles:** shapefile field names are cut to 10 characters (renames are listed after converting), text to 254 bytes, and mixed geometry becomes one shapefile per type in the zip; features without geometry are left out of shapefiles; CSV codes with a leading zero (`007`) and long digit strings (NIK) stay text; CSV has a byte-order mark so Excel reads UTF-8.
+- **Usage counts.** Each conversion is sent to GoatCounter as an event naming only the formats (`konversi-data/shp-ke-geojson`), never the file name or contents; loading the sample is `konversi-data/contoh`.
+
 ## Visitor stats
 
 The admin page opens with a **Visitors** panel: visitors today, in the last 7 and 30 days (each compared with the period before), a bar per day for the last 30 days, the top pages, and where visitors come from.
 
-GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`) loads GoatCounter's counting script in its `<head>`:
+GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`) loads GoatCounter's counting script in its `<head>`:
 
 ```html
 <script data-goatcounter="https://geosai.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 ```
 
-The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the admin page's `connect-src`.
+The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page and `konversi-data.html`.
 
 - **No cookies.** GoatCounter works out unique visitors from a daily-rotating hash and stores no personal data, so no cookie banner is needed.
 - **Not counted:** the admin page (it has no script), local previews (`localhost`), automated browsers, and any browser where *Don't count my own visits on this device* is ticked in the panel (it sets GoatCounter's own `skipgc` flag). Tick it on each browser you use, so your own visits don't make the numbers look bigger.
@@ -100,7 +110,7 @@ node scripts/build-basemap.js ne_10m_admin_0_countries.geojson
 
 ```sh
 npm start        # serves public/ at http://localhost:8000
-npm test         # schema and static map tests
+npm test         # schema, static map and converter tests
 npm run validate # check public/data/datasets.json
 ```
 

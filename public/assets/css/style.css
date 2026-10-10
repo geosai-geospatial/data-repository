@@ -407,7 +407,7 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .login { max-width: 440px; margin: 40px auto; text-align: center; }
 .login h1 { margin: 0 0 8px; }
 .login .small { color: var(--muted); font-size: 13px; margin-top: 12px; }
-.btn-github { background: #24292f; color: #fff; }
+.btn-dark { background: #24292f; color: #fff; }
 .btn-primary { background: var(--brand); color: #fff; }
 .btn-inline { display: inline-flex; width: auto; margin-top: 0; cursor: pointer; font: inherit; font-weight: 600; }
 .btn:disabled { opacity: .6; cursor: progress; }
@@ -454,9 +454,6 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 }
 .login-form { text-align: left; display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
 .login-form .btn { margin-top: 4px; cursor: pointer; font: inherit; font-weight: 600; }
-.token-help { text-align: left; margin-top: 20px; font-size: 14px; color: var(--muted); }
-.token-help summary { cursor: pointer; font-weight: 600; color: var(--text); }
-.token-help ol { padding-left: 20px; }
 .notice { background: var(--brand-soft); color: var(--brand-dark); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; font-size: 14px; }
 
 /* Email: the main contact channel */

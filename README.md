@@ -1,6 +1,6 @@
 # GeoSAI — geospatial services and data
 
-Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon projects, spatial analysis, mapping, data processing) and its catalog of Indonesian geospatial datasets, hosted free on GitHub Pages, with a small admin CMS at `/admin.html`.
+Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon projects, spatial analysis, mapping, data processing) and its catalog of Indonesian geospatial datasets, hosted free on GitHub Pages, with a small admin CMS at an unlisted URL (`/m-e338eb7f7ea322a5f51f91f6.html`).
 
 ## Pages
 
@@ -42,7 +42,7 @@ Public pages ──────────────────────�
    - Resource owner: `geosai-geospatial` (an organisation owner may need to approve the token)
    - Repository access: *Only select repositories* → `data-repository`
    - Permissions → Repository → **Contents: Read and write**
-3. Open `/admin.html` on the live site and paste the token.
+3. Open `/m-e338eb7f7ea322a5f51f91f6.html` on the live site and paste the token into *Access key*. The page is unlinked, marked `noindex`, and says nothing about how sign-in works; share its URL only with admins.
 
 When the token expires, generate a new one and sign in again.
 
@@ -51,7 +51,7 @@ When the token expires, generate a new one and sign in again.
 `public/assets/js/config.js`:
 
 - `contacts`: `email` is the main channel; every ask/sample/order button opens a pre-filled email to it (with a Gmail fallback and a copy button). Telegram and Discord are hidden while empty; names in `comingSoon` are shown as "Segera hadir".
-- `cms`: the repository, branch and file path the admin commits to. An empty `branch` means the repo's default branch. The deploy workflow (`.github/workflows/pages.yml`) runs on pushes to `main` and `claude/vibrant-clarke-y6qm5s`; if you change the default branch, make sure it is in that list.
+- The repository, branch and file path the admin commits to are set at the top of `public/assets/js/admin.js` (not in `config.js`, which every public page loads). An empty `branch` means the repo's default branch. The deploy workflow (`.github/workflows/pages.yml`) runs on pushes to `main` and `claude/vibrant-clarke-y6qm5s`; if you change the default branch, make sure it is in that list.
 
 Styling: `public/assets/css/style.css` (brand colour is `--brand`).
 

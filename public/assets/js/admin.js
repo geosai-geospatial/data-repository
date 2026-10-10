@@ -5,7 +5,16 @@
 (function () {
   "use strict";
 
-  var CMS = window.SITE.cms;
+  // Where saves are committed. Kept here rather than in config.js, which every
+  // public page loads. Leave branch empty to use the default branch.
+  var CMS = {
+    owner: "geosai-geospatial",
+    repo: "data-repository",
+    branch: "",
+    path: "public/data/datasets.json",
+    // Admin-only Google Drive folder links, kept outside public/.
+    linksPath: "cms/drive-links.json",
+  };
   var TOKEN_KEY = "geosai-cms-token";
   var $ = function (id) { return document.getElementById(id); };
   var state = { items: [], links: {}, editing: null, token: null, branch: CMS.branch, layer: null, mapFile: null };
@@ -45,12 +54,12 @@
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (data) {
         if (r.ok) return data;
-        var err = new Error(data.message || "GitHub returned HTTP " + r.status);
+        var err = new Error(data.message || "Request failed (HTTP " + r.status + ")");
         err.status = r.status;
         if (r.status === 401) {
           clearToken();
           show("login");
-          err.message = "GitHub rejected the token (expired or revoked). Please sign in again.";
+          err.message = "Your session has expired. Please sign in again.";
         }
         throw err;
       });
@@ -168,15 +177,15 @@
       var me = res[0], repo = res[1];
       if (!repo.permissions || !repo.permissions.push) {
         clearToken();
-        throw new Error("This token cannot write to " + CMS.owner + "/" + CMS.repo + ". Give it Contents: Read and write on this repository.");
+        throw new Error("This access key cannot make changes.");
       }
       state.branch = CMS.branch || repo.default_branch;
       $("who").innerHTML = (me.avatar_url ? '<img src="' + esc(me.avatar_url) + '" alt="">' : "") + esc(me.login);
       return loadList();
     }).catch(function (err) {
-      if (err.status === 404) {
+      if (err.status === 401 || err.status === 404) {
         clearToken();
-        err.message = "Repository " + CMS.owner + "/" + CMS.repo + " was not found with this token. Check that the token has access to it.";
+        err.message = "Invalid access key.";
       }
       throw err;
     });
@@ -616,7 +625,6 @@
   });
 
   // ---------- Boot ----------
-  $("repo-name").textContent = CMS.owner + "/" + CMS.repo;
   var stored = readToken();
   if (!stored) {
     show("login");

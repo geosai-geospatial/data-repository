@@ -70,6 +70,16 @@ test("free datasets need an https download link and show as Gratis", () => {
   assert.throws(() => validate({ ...base, free: true }), /download/);
   assert.throws(() => validate({ ...base, free: true, download: "javascript:alert(1)" }), /https/);
   assert.throws(() => validate({ ...base, free: true, download: "http://example.com/a.zip" }), /https/);
+  assert.throws(() => validate({ ...base, price: "Gratis" }), /tick "Free"/);
+  assert.throws(() => validate({ ...base, price: " free " }), /tick "Free"/);
   const paid = validate({ ...base, download: "https://example.com/a.zip" });
   assert.ok(!("free" in paid) && !("download" in paid));
+});
+
+test("admin saves refuse to drop fields this schema doesn't know", () => {
+  const d = { id: "a", title: "T", category: "C" };
+  assert.equal(validateAll([{ ...d, future: "x" }]).length, 1);
+  assert.throws(() => validateAll([{ ...d, future: "x" }], { keepAll: true }), /out of date.*"future"/);
+  assert.equal(validateAll([{ ...d, free: false, download: "" }], { keepAll: true }).length, 1);
+  assert.equal(validateAll([{ ...d, free: true, download: "https://x.org/a" }], { keepAll: true })[0].free, true);
 });

@@ -15,6 +15,7 @@
   // Public download link of a free dataset. Must be https so the button can
   // never become a javascript: or plain-http link.
   var DOWNLOAD_RE = /^https:\/\/[^\s"'<>]+$/;
+  var FREE_PRICE_RE = /^(?:gratis|free)$/i;
 
   function fail(msg) { throw new Error(msg); }
 
@@ -98,6 +99,11 @@
       price: str(input.price, "price", { max: 100 }) || "Hubungi kami",
       published: input.published !== false,
     };
+    // A price of "Gratis" alone still shows the order-by-email panel; the
+    // download button needs the free flag and a link.
+    if (input.free !== true && FREE_PRICE_RE.test(out.price)) {
+      fail('To make a dataset free, tick "Free" and add a public download link instead of typing "' + out.price + '" as the price');
+    }
     // Free datasets are downloaded straight from the public link, without
     // contacting us. The two keys are only written for free datasets.
     if (input.free === true) {
@@ -128,7 +134,11 @@
   }
 
   // Validates the whole catalog file: an array of valid datasets with unique ids.
-  function validateAll(list) {
+  // With opts.keepAll, a field that validation would silently drop is an error
+  // instead. The admin saves with it: a browser still running an older copy of
+  // this file doesn't know newer fields and would otherwise erase them from
+  // every dataset on its next save.
+  function validateAll(list, opts) {
     if (!Array.isArray(list)) fail("datasets.json must contain a JSON array");
     var seen = {};
     return list.map(function (d, i) {
@@ -136,6 +146,13 @@
       try { v = validate(d); } catch (e) { fail("Dataset #" + (i + 1) + " (" + (d && d.id) + "): " + e.message); }
       if (seen[v.id]) fail('Duplicate id "' + v.id + '"');
       seen[v.id] = true;
+      if (opts && opts.keepAll) {
+        Object.keys(d).forEach(function (k) {
+          if (!(k in v) && d[k] != null && d[k] !== "" && d[k] !== false) {
+            fail('This admin page is out of date: saving would remove "' + k + '" from ' + v.id + ". Reload the page (Ctrl+Shift+R) and try again.");
+          }
+        });
+      }
       return v;
     });
   }

@@ -437,5 +437,154 @@
     "price": "Hubungi kami",
     "published": true,
     "updated": "2026-10-10"
+  },
+  {
+    "id": "wiup-minerba-2024",
+    "title": "Wilayah Izin Usaha Pertambangan (WIUP) Mineral & Batubara 2024",
+    "category": "Pertambangan",
+    "summary": "7.854 poligon wilayah izin pertambangan mineral dan batubara (IUP, WIUP, IUPK, WIUPK, KK, PKP2B, IPR) di seluruh Indonesia, lengkap dengan pemegang izin, nomor SK, komoditas, tahapan kegiatan, masa berlaku, dan luas.",
+    "description": [
+      "Kompilasi wilayah izin pertambangan mineral dan batubara tahun 2024 yang mencakup seluruh rezim perizinan: IUP (4.168), WIUP (3.506), PKP2B (76), IPR (46), Kontrak Karya (36), IUPK (17), dan WIUPK (5). Luas total menurut SK ± 10,2 juta hektar, didominasi wilayah Operasi Produksi (± 8,1 juta ha), diikuti Eksplorasi (± 0,85 juta ha) dan Pencadangan (± 0,85 juta ha).",
+      "Mencakup 147 jenis komoditas dalam lima golongan: mineral logam (950 poligon, mis. nikel, timah, emas, bauksit, bijih besi), batubara (1.006), mineral bukan logam (327), mineral bukan logam jenis tertentu (1.015, mis. pasir kuarsa, batu gamping untuk industri), dan batuan (4.556, mis. sirtu, andesit, tanah urug).",
+      "Setiap poligon memuat nama dan bentuk badan usaha, kode WIUP, nomor SK, tanggal berlaku dan berakhir, tahapan kegiatan, status Clean and Clear (CNC), pejabat penerbit (Menteri, Gubernur, Bupati), serta pulau, provinsi, kabupaten, dan lokasi.",
+      "Berguna untuk uji tuntas (due diligence) lahan dan rantai pasok mineral (mis. nikel dan batubara), analisis tumpang-tindih dengan kawasan hutan, konsesi kehutanan dan perkebunan, serta penapisan risiko pada proyek karbon dan restorasi."
+    ],
+    "coverage": "Seluruh Indonesia (Sumatera, Jawa–Bali, Kalimantan, Sulawesi, Nusa Tenggara, Maluku, Papua)",
+    "bbox": [
+      95,
+      -11,
+      141,
+      6
+    ],
+    "image": "",
+    "source": "Kompilasi dari data wilayah izin pertambangan Kementerian ESDM (MODI / Geoportal ESDM)",
+    "year": "2024",
+    "format": [
+      "SHP"
+    ],
+    "crs": "EPSG:4326 (WGS 84)",
+    "geometry": "Polygon",
+    "features": 7854,
+    "size": "",
+    "attributes": [
+      {
+        "name": "objectid",
+        "type": "Integer",
+        "description": "ID objek"
+      },
+      {
+        "name": "pulau",
+        "type": "Text",
+        "description": "Kelompok pulau (Sumatera, Jawa dan Bali, Kalimantan, Sulawesi, Kep. Nusa Tenggara, Kep. Maluku, Papua)"
+      },
+      {
+        "name": "pejabat",
+        "type": "Text",
+        "description": "Pejabat penerbit izin (Menteri, Gubernur, Bupati)"
+      },
+      {
+        "name": "id_prov",
+        "type": "Text",
+        "description": "Kode provinsi"
+      },
+      {
+        "name": "nama_prov",
+        "type": "Text",
+        "description": "Provinsi"
+      },
+      {
+        "name": "id_kab",
+        "type": "Text",
+        "description": "Kode kabupaten / kota"
+      },
+      {
+        "name": "nama_kab",
+        "type": "Text",
+        "description": "Kabupaten / Kota"
+      },
+      {
+        "name": "jenis_izin",
+        "type": "Text",
+        "description": "Jenis izin: IUP, WIUP, IUPK, WIUPK, KK, PKP2B, IPR"
+      },
+      {
+        "name": "badan_usah",
+        "type": "Text",
+        "description": "Bentuk badan usaha (PT, CV, Koperasi, perorangan, dll.)"
+      },
+      {
+        "name": "nama_usaha",
+        "type": "Text",
+        "description": "Nama pemegang izin"
+      },
+      {
+        "name": "kode_wiup",
+        "type": "Text",
+        "description": "Kode WIUP"
+      },
+      {
+        "name": "sk_iup",
+        "type": "Text",
+        "description": "Nomor SK izin"
+      },
+      {
+        "name": "tgl_berlak",
+        "type": "Text",
+        "description": "Tanggal mulai berlaku izin"
+      },
+      {
+        "name": "tgl_akhir",
+        "type": "Text",
+        "description": "Tanggal berakhir izin"
+      },
+      {
+        "name": "kegiatan",
+        "type": "Text",
+        "description": "Tahapan: Eksplorasi, Operasi Produksi, Pencadangan, Lelang, Wil. Penunjang, Pascatambang"
+      },
+      {
+        "name": "luas_sk",
+        "type": "Double",
+        "description": "Luas menurut SK (hektar)"
+      },
+      {
+        "name": "komoditas",
+        "type": "Text",
+        "description": "Komoditas (mis. Batubara, Nikel, Timah, Emas, Pasir Kuarsa, Andesit)"
+      },
+      {
+        "name": "kode_golon",
+        "type": "Text",
+        "description": "Kode golongan komoditas (2 mineral logam, 3 batubara, 4 mineral bukan logam, 5 batuan, 6 mineral bukan logam jenis tertentu)"
+      },
+      {
+        "name": "kode_jnsko",
+        "type": "Text",
+        "description": "Kode jenis komoditas"
+      },
+      {
+        "name": "cnc",
+        "type": "Text",
+        "description": "Status Clean and Clear (CNC) / I.T"
+      },
+      {
+        "name": "generasi",
+        "type": "Text",
+        "description": "Generasi PKP2B / jenis penanaman modal (mis. GEN III, IUP PMA)"
+      },
+      {
+        "name": "kode_wil",
+        "type": "Text",
+        "description": "Kode wilayah"
+      },
+      {
+        "name": "lokasi",
+        "type": "Text",
+        "description": "Lokasi (desa / kecamatan)"
+      }
+    ],
+    "price": "Hubungi kami",
+    "published": true,
+    "updated": "2026-10-10"
   }
 ]

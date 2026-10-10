@@ -76,12 +76,104 @@
     }
   }
 
-  function contactButtons() {
+  // ---------- Email ----------
+  // Email is the main channel. Every button opens a pre-filled message so
+  // visitors don't have to work out what to write or what we need from them.
+  function dsLines(d) {
+    if (!d) return [];
+    var url = location.origin + location.pathname.replace(/[^/]*$/, "") + "dataset.html?id=" + encodeURIComponent(d.id);
+    return ["- Dataset: " + d.title, "- Kode: " + d.id, "- Tautan: " + url, ""];
+  }
+
+  function mailTemplate(kind, d) {
+    var name = d ? d.title : "";
+    var who = ["- Nama:", "- Instansi/perusahaan:"];
+    var t = {
+      ask: {
+        subject: "Pertanyaan data spasial" + (d ? ": " + name : ""),
+        body: [d ? "Saya ingin bertanya tentang dataset berikut:" : "Saya mencari data spasial dengan kebutuhan berikut:", ""]
+          .concat(dsLines(d))
+          .concat(d ? ["Pertanyaan saya:", "", ""] : ["- Data yang dicari:", "- Wilayah:", "- Tahun data:", "- Format (SHP / GPKG / lainnya):", ""])
+          .concat(who),
+      },
+      sample: {
+        subject: "Permintaan sampel" + (d ? ": " + name : " dataset"),
+        body: ["Saya ingin melihat sampel data sebelum membeli.", ""]
+          .concat(d ? dsLines(d) : ["- Dataset:", ""])
+          .concat(["- Wilayah sampel yang diinginkan:"]).concat(who),
+      },
+      order: {
+        subject: "Pemesanan dataset" + (d ? ": " + name : ""),
+        body: ["Saya ingin memesan dataset berikut:", ""]
+          .concat(d ? dsLines(d) : ["- Dataset:", ""])
+          .concat(["Detail kebutuhan:", "- Wilayah (seluruh cakupan / provinsi / kabupaten):", "- Format (SHP / GPKG / lainnya):", "- Keperluan penggunaan:"])
+          .concat(who)
+          .concat(["", "Mohon informasi harga dan cara pembayarannya."]),
+      },
+      invoice: {
+        subject: "Permintaan penawaran resmi" + (d ? ": " + name : ""),
+        body: ["Kami membutuhkan penawaran resmi untuk pengadaan data spasial.", ""]
+          .concat(d ? dsLines(d) : ["- Dataset:", ""])
+          .concat(["- Nama instansi/perusahaan:", "- Nama & jabatan penanggung jawab:", "- Alamat penagihan:", "- Dokumen yang dibutuhkan (penawaran / invoice / kuitansi):"]),
+      },
+    }[kind];
+    t.body = ["Halo GeoSAI Data,", ""].concat(t.body).concat(["", "Terima kasih."]).join("\n");
+    return t;
+  }
+
+  function mailto(t) {
+    return "mailto:" + SITE.contacts.email + "?subject=" + encodeURIComponent(t.subject) + "&body=" + encodeURIComponent(t.body);
+  }
+
+  // For visitors without a desktop mail app, where mailto: links do nothing.
+  function gmailUrl(t) {
+    return "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(SITE.contacts.email) +
+      "&su=" + encodeURIComponent(t.subject) + "&body=" + encodeURIComponent(t.body);
+  }
+
+  function copyButton() {
+    return '<button type="button" class="copy-btn" data-copy="' + esc(SITE.contacts.email) + '">Salin</button>';
+  }
+
+  function emailFallback(t) {
+    return '<p class="email-alt">Aplikasi email tidak terbuka? <a href="' + esc(gmailUrl(t)) + '" target="_blank" rel="noopener">Kirim lewat Gmail</a> ' +
+      "atau kirim ke <strong>" + esc(SITE.contacts.email) + "</strong> " + copyButton() + "</p>";
+  }
+
+  function comingSoonNote() {
+    var soon = SITE.contacts.comingSoon || [];
+    return soon.length ? '<p class="soon-note"><span class="soon-badge">Segera hadir</span>' + esc(soon.join(" & ")) + "</p>" : "";
+  }
+
+  function contactButtons(d) {
     var c = SITE.contacts, html = "";
+    if (c.email) {
+      var order = mailTemplate("order", d);
+      html += '<a class="btn btn-primary" href="' + esc(mailto(order)) + '">' + ICONS.email + "Pesan via Email</a>";
+      html += '<a class="btn btn-email" href="' + esc(mailto(mailTemplate("sample", d))) + '">Minta sampel gratis</a>';
+      html += emailFallback(order);
+    }
     if (c.telegram) html += '<a class="btn btn-telegram" href="' + esc(c.telegram) + '" target="_blank" rel="noopener">' + ICONS.telegram + "Chat via Telegram</a>";
     if (c.discord) html += '<a class="btn btn-discord" href="' + esc(c.discord) + '" target="_blank" rel="noopener">' + ICONS.discord + "Gabung Discord</a>";
-    if (c.email) html += '<a class="btn btn-email" href="mailto:' + esc(c.email) + '">' + ICONS.email + "Kirim Email</a>";
-    return html;
+    return html + comingSoonNote();
+  }
+
+  function initCopy() {
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest("[data-copy]");
+      if (!b) return;
+      var text = b.getAttribute("data-copy");
+      var done = function () {
+        var label = b.textContent;
+        b.textContent = "Tersalin ✓";
+        setTimeout(function () { b.textContent = label; }, 2000);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { window.prompt("Salin alamat email:", text); });
+      } else {
+        window.prompt("Salin alamat email:", text);
+      }
+    });
   }
 
   // ---------- Home ----------
@@ -272,7 +364,7 @@
       '<aside><div class="panel buy">' +
       '<p class="price-label">Harga</p><p class="price-big">' + esc(d.price || "Hubungi kami") + "</p>" +
       '<p class="small">' + ICONS.clock + esc(SITE.responseTime) + "</p>" +
-      contactButtons() +
+      contactButtons(d) +
       '<div class="guarantee">' + ICONS.shield + "<div><strong>Lihat sampel dulu, bayar kemudian.</strong> Minta potongan data atau tangkapan tabel atribut sebelum memutuskan.</div></div>" +
       '<hr class="divider"><h3>Yang Anda terima</h3><ul class="checklist">' +
       "<li>" + ICONS.check + "File " + esc((d.format || []).join(" / ") || "data") + "</li>" +
@@ -281,7 +373,7 @@
       "<li>" + ICONS.check + "Potongan per wilayah atas permintaan</li>" +
       "</ul>" +
       '<hr class="divider"><h3>Cara memesan</h3>' +
-      '<ol class="steps"><li>Kirim nama dataset ini lewat Telegram atau Discord.</li><li>Kami kirim penawaran, sampel atribut, dan pratinjau geometri.</li><li>Setelah pembayaran dikonfirmasi, file dikirim via tautan unduhan.</li></ol>' +
+      '<ol class="steps"><li>Klik <strong>Pesan via Email</strong>; nama dataset sudah terisi, tinggal lengkapi wilayah dan keperluan.</li><li>Kami kirim penawaran, sampel atribut, dan pratinjau geometri.</li><li>Setelah pembayaran dikonfirmasi, file dikirim via tautan unduhan.</li></ol>' +
       "</div>" +
       '<div class="panel"><h2>Spesifikasi</h2><table class="specs"><tbody>' +
       specs.map(function (s) { return "<tr><th>" + esc(s[0]) + "</th><td>" + esc(s[1]) + "</td></tr>"; }).join("") +
@@ -301,20 +393,53 @@
 
   // ---------- Contact ----------
   function renderContact() {
-    var c = SITE.contacts, cards = [];
-    if (c.telegram) cards.push({ cls: "btn-telegram", bg: "#229ed9", icon: ICONS.telegram, title: "Telegram", label: c.telegramLabel, text: "Cara tercepat untuk bertanya, minta sampel, dan memesan data.", href: c.telegram, cta: "Chat via Telegram" });
-    if (c.discord) cards.push({ cls: "btn-discord", bg: "#5865f2", icon: ICONS.discord, title: "Discord", label: c.discordLabel, text: "Gabung komunitas untuk info rilis dataset baru dan diskusi teknis.", href: c.discord, cta: "Gabung Discord" });
-    if (c.email) cards.push({ cls: "btn-email", bg: "#374151", icon: ICONS.email, title: "Email", label: c.email, text: "Untuk penawaran resmi, invoice, dan kebutuhan institusi.", href: "mailto:" + c.email, cta: "Kirim Email" });
+    var c = SITE.contacts, html = "";
+    if (c.email) {
+      var templates = [
+        { kind: "ask", title: "Tanya ketersediaan data", text: "Cari data yang belum ada di katalog, atau tanya detail dataset." },
+        { kind: "sample", title: "Minta sampel gratis", text: "Lihat potongan data atau tabel atribut sebelum membeli." },
+        { kind: "order", title: "Pesan dataset", text: "Dapatkan harga dan cara pembayaran untuk dataset pilihan Anda." },
+        { kind: "invoice", title: "Penawaran resmi / invoice", text: "Untuk pengadaan instansi atau perusahaan yang butuh dokumen." },
+      ];
+      html +=
+        '<section class="panel email-hero">' +
+        '<div class="email-head"><div class="icon">' + ICONS.email + "</div><div>" +
+        '<p class="kicker">Email</p><h2><a href="mailto:' + esc(c.email) + '">' + esc(c.email) + "</a> " + copyButton() + "</h2>" +
+        "<p>Satu alamat untuk bertanya, minta sampel, dan memesan. Pilih keperluan Anda; email terbuka dengan isi yang sudah disiapkan, tinggal lengkapi.</p>" +
+        "</div></div>" +
+        '<div class="template-grid">' +
+        templates.map(function (k) {
+          var t = mailTemplate(k.kind);
+          return '<div class="template">' +
+            "<h3>" + esc(k.title) + "</h3><p>" + esc(k.text) + "</p>" +
+            '<a class="btn btn-primary" href="' + esc(mailto(t)) + '">' + ICONS.email + "Tulis email</a>" +
+            '<a class="gmail-link" href="' + esc(gmailUrl(t)) + '" target="_blank" rel="noopener">atau buka di Gmail</a></div>';
+        }).join("") +
+        "</div></section>";
+    }
 
-    document.getElementById("contact-cards").innerHTML = cards.map(function (k) {
-      var ext = k.href.indexOf("mailto:") === 0 ? "" : ' target="_blank" rel="noopener"';
-      return (
-        '<div class="panel contact-card">' +
-        '<div class="icon" style="background:' + k.bg + '">' + k.icon + "</div>" +
-        "<h3>" + esc(k.title) + "</h3><p><strong>" + esc(k.label) + "</strong></p><p>" + esc(k.text) + "</p>" +
-        '<a class="btn ' + k.cls + '" href="' + esc(k.href) + '"' + ext + ">" + esc(k.cta) + "</a></div>"
-      );
-    }).join("");
+    var cards = [];
+    if (c.telegram) cards.push({ cls: "btn-telegram", bg: "#229ed9", icon: ICONS.telegram, title: "Telegram", label: c.telegramLabel, text: "Bertanya, minta sampel, dan memesan data lewat chat.", href: c.telegram, cta: "Chat via Telegram" });
+    if (c.discord) cards.push({ cls: "btn-discord", bg: "#5865f2", icon: ICONS.discord, title: "Discord", label: c.discordLabel, text: "Gabung komunitas untuk info rilis dataset baru dan diskusi teknis.", href: c.discord, cta: "Gabung Discord" });
+    var soon = { Telegram: ICONS.telegram, Discord: ICONS.discord };
+    html += '<div class="contact-grid">' +
+      cards.map(function (k) {
+        return (
+          '<div class="panel contact-card">' +
+          '<div class="icon" style="background:' + k.bg + '">' + k.icon + "</div>" +
+          "<h3>" + esc(k.title) + "</h3><p><strong>" + esc(k.label) + "</strong></p><p>" + esc(k.text) + "</p>" +
+          '<a class="btn ' + k.cls + '" href="' + esc(k.href) + '" target="_blank" rel="noopener">' + esc(k.cta) + "</a></div>"
+        );
+      }).join("") +
+      (c.comingSoon || []).map(function (name) {
+        return '<div class="panel contact-card soon">' +
+          '<div class="icon">' + (soon[name] || ICONS.email) + "</div>" +
+          "<h3>" + esc(name) + ' <span class="soon-badge">Segera hadir</span></h3>' +
+          "<p>Kanal " + esc(name) + " sedang kami siapkan. Sementara itu, hubungi kami lewat email.</p></div>";
+      }).join("") +
+      "</div>";
+
+    document.getElementById("contact-cards").innerHTML = html;
     var rt = document.getElementById("response-time");
     if (rt) rt.textContent = SITE.responseTime;
   }
@@ -336,6 +461,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     var page = document.body.getAttribute("data-page");
     renderLayout(page);
+    initCopy();
     if (page === "home") {
       loadDatasets()
         .then(function (list) { DATASETS = list; renderHome(); })

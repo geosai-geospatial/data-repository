@@ -42,7 +42,7 @@ When the token expires, generate a new one and sign in again.
 
 `public/assets/js/config.js`:
 
-- `contacts`: Telegram, Discord, email (empty values are hidden).
+- `contacts`: `email` is the main channel; every ask/sample/order button opens a pre-filled email to it (with a Gmail fallback and a copy button). Telegram and Discord are hidden while empty; names in `comingSoon` are shown as "Segera hadir".
 - `cms`: the repository, branch and file path the admin commits to. An empty `branch` means the repo's default branch. The deploy workflow (`.github/workflows/pages.yml`) runs on pushes to `main` and `claude/vibrant-clarke-y6qm5s`; if you change the default branch, make sure it is in that list.
 
 Styling: `public/assets/css/style.css` (brand colour is `--brand`).
@@ -66,6 +66,6 @@ Saving from a local preview commits to the real repository, the same as on the l
 
 ## Before going live
 
-- [ ] Replace placeholder Telegram/Discord handles in `config.js`
+- [ ] When Telegram/Discord are ready: set their links in `config.js` and remove them from `comingSoon`
 - [ ] Replace the example datasets with real ones through the admin (especially feature counts)
 - [ ] Check redistribution rights for each source

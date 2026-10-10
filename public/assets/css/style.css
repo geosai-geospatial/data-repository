@@ -603,3 +603,35 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .template .gmail-link { font-size: 13px; text-align: center; margin-top: 8px; }
 .contact-card.soon { opacity: 0.85; }
 .contact-card.soon .icon { background: var(--subtle); }
+
+/* Public GeoTIFF viewer (lihat-geotiff.html) */
+.viewer .maker-controls #gv-options h2 { margin-top: 24px; }
+.gv-map-wrap { position: relative; }
+.gv-map { height: 600px; max-height: 75vh; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); z-index: 0; }
+.gv-map-wrap .maker-placeholder { pointer-events: none; z-index: 500; background: rgba(246, 247, 249, 0.75); border-radius: 8px; }
+.gv-raster { image-rendering: pixelated; }
+.gv-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.gv-presets .chip { cursor: pointer; font: inherit; font-size: 13px; }
+.gv-modes { margin-bottom: 16px; }
+.gv-form .gv-group { display: grid; gap: 14px; }
+.gv-form .gv-group[hidden] { display: none; }
+.gv-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.gv-form label.gv-check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
+.gv-form label.gv-check input { width: auto; }
+.gv-form input[type="range"] { padding: 0; border: 0; accent-color: var(--brand); }
+.gv-legend { display: grid; gap: 4px; }
+.gv-ramp-bar { display: block; height: 12px; border-radius: 3px; border: 1px solid var(--border); }
+.gv-ramp-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gv-ranges { display: grid; gap: 8px; margin-top: 8px; }
+.gv-range { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.gv-range > span:first-child { min-width: 42px; }
+.gv-range-one { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+.gv-range input { padding: 6px 8px !important; font-variant-numeric: tabular-nums; }
+.gv-facts { margin-top: 16px; }
+.gv-pixel { border-collapse: collapse; font-size: 12px; }
+.gv-pixel th { text-align: left; font-weight: 500; color: var(--muted); padding: 2px 12px 2px 0; }
+.gv-pixel td { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gv-pixel-at { margin: 6px 0 0 !important; font-size: 11px; color: var(--subtle); }
+@media (max-width: 860px) {
+  .gv-map { height: 60vh; }
+}

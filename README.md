@@ -10,6 +10,7 @@ Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon 
 - `contact.html`: email templates (consultation, data questions, samples, orders, invoices) and the FAQ.
 - `buat-peta.html`: free public map maker (*Buat Peta* in the menu). See below.
 - `konversi-data.html`: free public data converter (*Konversi* in the menu). See below.
+- `lihat-geotiff.html`: free public GeoTIFF viewer (*GeoTIFF* in the menu). See below.
 
 Live site: https://geosai-geospatial.github.io/data-repository/
 
@@ -55,18 +56,30 @@ Public pages ──────────────────────�
 - **Format rules it handles:** shapefile field names are cut to 10 characters (renames are listed after converting), text to 254 bytes, and mixed geometry becomes one shapefile per type in the zip; features without geometry are left out of shapefiles; CSV codes with a leading zero (`007`) and long digit strings (NIK) stay text; CSV has a byte-order mark so Excel reads UTF-8.
 - **Usage counts.** Each conversion is sent to GoatCounter as an event naming only the formats (`konversi-data/shp-ke-geojson`), never the file name or contents; loading the sample is `konversi-data/contoh`.
 
+## Public GeoTIFF viewer
+
+`lihat-geotiff.html` lets any visitor open a GeoTIFF (satellite image, drone orthomosaic, DEM, classification) on a map and colour it from its bands, without signing up:
+
+- **Colouring.** *Komposit RGB* puts any three bands on red, green and blue; *Satu band* colours one band with a ramp (grey, viridis, magma, red–yellow–green, spectral, elevation, blues); *Indeks* computes a normalised difference (A − B) / (A + B), e.g. NDVI or NDWI. The value range is automatic (2–98 % of values), data min–max, 0–255 for 8-bit images (the default there, so photos keep their colours), −1 to 1 for indices, or typed by hand. When band descriptions name the bands (*red*, *NIR*, *B4*, *Merah*…), one-click presets appear (true colour, false colour, NDVI, NDWI). Files with a colour table open in their own palette. Clicking the map shows every band's value at that point.
+- **GeoSAI does not store the data.** The file is read and drawn in the visitor's browser by `assets/js/geotiff.js`; `assets/js/viewer.js` is the page. The page has the same Content-Security-Policy as the converter (connections only to the site and GoatCounter). The basemap (OpenStreetMap or Esri imagery, both image tiles) does reveal the area on screen to that tile server, and the privacy statement says so; *Tanpa peta dasar* turns it off.
+- **Large files.** The file is never loaded whole: `geotiff.js` reads only the tiles/strips it needs (`Blob.slice`), uses overviews when present (COG), and samples a display grid of at most 2048 px a side and 32 million values (all bands together). Tested with a 6000×5000×3 file: about 2 s with overviews, 3 s without.
+- **What it reads:** TIFF and BigTIFF, either byte order, strips or tiles, chunky or planar; 8–64-bit integer and float samples; no compression, LZW, Deflate, PackBits (with horizontal or floating-point predictor), JPEG and WebP (decoded by the browser); GDAL nodata, alpha band, band descriptions and colour table. Coordinates: geographic (treated as WGS 84), Web Mercator, WGS 84 and DGN95 UTM, DGN95 Indonesia TM-3, and user-defined Transverse Mercator; the raster is reprojected to Web Mercator in the browser (nearest neighbour). Anything else (ZSTD/LERC, Lambert, Albers…) gets a message explaining how to re-save the file.
+- **Map library.** Leaflet 1.9.4 is vendored in `assets/vendor/leaflet/` (BSD-2-Clause, licence alongside), so the page loads no third-party scripts besides GoatCounter.
+- **Sample data.** *Coba dengan citra Sentinel-2 contoh* loads `data/contoh-sentinel2-jakarta.tif`: a 512×512 crop (10 m, bands B2, B3, B4, B8, UTM 48S) of the North Jakarta coast (Muara Angke mangroves, PIK) from Sentinel-2A, 27 July 2024 (Copernicus Sentinel data 2024, via the Element 84 Earth Search archive).
+- **Usage counts.** Opening the sample and opening a file are GoatCounter events (`lihat-geotiff/contoh`, `lihat-geotiff/buka`), never the file name or contents.
+
 ## Visitor stats
 
 The admin page opens with a **Visitors** panel: visitors today, in the last 7 and 30 days (each compared with the period before), a bar per day for the last 30 days, the top pages, and where visitors come from.
 
-GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`) loads GoatCounter's counting script in its `<head>`:
+GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`, `lihat-geotiff`) loads GoatCounter's counting script in its `<head>`:
 
 ```html
 <script data-goatcounter="https://geosai.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 ```
 
-The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page and `konversi-data.html`.
+The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page, `konversi-data.html` and `lihat-geotiff.html`.
 
 - **No cookies.** GoatCounter works out unique visitors from a daily-rotating hash and stores no personal data, so no cookie banner is needed.
 - **Not counted:** the admin page (it has no script), local previews (`localhost`), automated browsers, and any browser where *Don't count my own visits on this device* is ticked in the panel (it sets GoatCounter's own `skipgc` flag). Tick it on each browser you use, so your own visits don't make the numbers look bigger.
@@ -110,7 +123,7 @@ node scripts/build-basemap.js ne_10m_admin_0_countries.geojson
 
 ```sh
 npm start        # serves public/ at http://localhost:8000
-npm test         # schema, static map and converter tests
+npm test         # schema, static map, converter and GeoTIFF tests
 npm run validate # check public/data/datasets.json
 ```
 

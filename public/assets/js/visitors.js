@@ -1,12 +1,12 @@
-// Admin: the "Visitors" panel. Visits are counted by GoatCounter (see
-// countVisit in app.js); this reads them back through its API with a read-only
+// Admin: the "Visitors" panel. Visits are counted by GoatCounter's count.js
+// (in the <head> of each public page); this reads them back through its API with a read-only
 // API key that the admin pastes once. The key is kept on this device only and
 // is only ever sent to <code>.goatcounter.com.
 (function () {
   "use strict";
 
   var KEY = "geosai-goatcounter-key";
-  var NO_COUNT = "geosai-no-count";
+  var NO_COUNT = "skipgc"; // count.js skips counting while this is "t"
   var DAYS = 30;
   var $ = function (id) { return document.getElementById(id); };
   var code = ((window.SITE || {}).analytics || {}).goatcounter || "";
@@ -205,11 +205,11 @@
     load();
   });
 
-  // "Don't count my visits": app.js skips counting while this flag is set, so
+  // "Don't count my visits": count.js skips counting while this flag is set, so
   // the admin's own browsing doesn't inflate the numbers.
   var self = $("visitors-self");
-  self.checked = read(NO_COUNT) === "1";
-  self.addEventListener("change", function () { store(NO_COUNT, self.checked ? "1" : null); });
+  self.checked = read(NO_COUNT) === "t";
+  self.addEventListener("change", function () { store(NO_COUNT, self.checked ? "t" : null); });
 
   if (code) $("visitors-open").href = "https://" + code + ".goatcounter.com";
   else $("visitors-actions").hidden = true;

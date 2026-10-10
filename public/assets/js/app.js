@@ -518,34 +518,9 @@
     el.innerHTML = '<div class="panel empty"><h2>Gagal memuat data</h2><p>Silakan muat ulang halaman ini.</p></div>';
   }
 
-  // ---------- Visitor counting ----------
-  // One request to GoatCounter per page view, sent as an image so no
-  // third-party script runs on the site. GoatCounter sets no cookies; it
-  // works out unique visitors from a daily-rotating hash on its side.
-  // Not counted: the admin page, local previews, automated browsers, and
-  // devices where the admin ticked "Don't count my own visits".
-  function countVisit(page) {
-    var code = (SITE.analytics || {}).goatcounter;
-    if (!code || page === "admin" || navigator.webdriver) return;
-    if (location.protocol === "file:" || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(location.hostname)) return;
-    try { if (localStorage.getItem("geosai-no-count") === "1") return; } catch (e) { /* count */ }
-    var id = page === "dataset" ? new URLSearchParams(location.search).get("id") : "";
-    var ref = "";
-    try { if (document.referrer && new URL(document.referrer).host !== location.host) ref = document.referrer; } catch (e) { /* none */ }
-    var q = {
-      p: location.pathname + (id ? "?id=" + id : ""),
-      t: document.title,
-      r: ref,
-      s: [screen.width, screen.height, window.devicePixelRatio || 1].join(","),
-      rnd: Math.random().toString(36).slice(2),
-    };
-    new Image().src = "https://" + encodeURIComponent(code) + ".goatcounter.com/count?" + new URLSearchParams(q);
-  }
-
   document.addEventListener("DOMContentLoaded", function () {
     var page = document.body.getAttribute("data-page");
     renderLayout(page);
-    countVisit(page);
     initCopy();
     wireServiceButtons();
     if (page === "home") {

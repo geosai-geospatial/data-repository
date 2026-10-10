@@ -102,7 +102,7 @@
   }
 
   function commit(change, message) {
-    return writeJson(CMS.path, undefined, window.Schema.validateAll, change, message);
+    return writeJson(CMS.path, undefined, function (list) { return window.Schema.validateAll(list, { keepAll: true }); }, change, message);
   }
 
   function commitLinks(change, message) {

@@ -63,58 +63,6 @@
     "updated": "2026-10-01"
   },
   {
-    "id": "iuphhk-ha-indonesia",
-    "title": "Areal Kerja IUPHHK-HA (PBPH Hutan Alam)",
-    "category": "Kehutanan",
-    "summary": "Batas areal konsesi hutan alam (HPH / IUPHHK-HA / PBPH-HA) dengan atribut pemegang izin dan luas SK.",
-    "description": [
-      "Poligon areal kerja IUPHHK-HA / PBPH Hutan Alam di seluruh Indonesia beserta informasi pemegang izin dan legalitasnya."
-    ],
-    "coverage": "Seluruh Indonesia",
-    "bbox": [
-      95,
-      -11,
-      141,
-      6
-    ],
-    "image": "",
-    "source": "Kompilasi dari publikasi resmi KLHK / Kementerian Kehutanan",
-    "year": "2025",
-    "format": [
-      "SHP",
-      "GeoPackage"
-    ],
-    "crs": "EPSG:4326 (WGS 84)",
-    "geometry": "Polygon",
-    "features": 0,
-    "size": "± 40 MB",
-    "attributes": [
-      {
-        "name": "NAMA_PT",
-        "type": "Text",
-        "description": "Nama perusahaan pemegang izin"
-      },
-      {
-        "name": "NO_SK",
-        "type": "Text",
-        "description": "Nomor SK izin"
-      },
-      {
-        "name": "LUAS_SK",
-        "type": "Double",
-        "description": "Luas menurut SK (hektar)"
-      },
-      {
-        "name": "PROVINSI",
-        "type": "Text",
-        "description": "Provinsi"
-      }
-    ],
-    "price": "Hubungi kami",
-    "published": true,
-    "updated": "2026-10-01"
-  },
-  {
     "id": "kawasan-hutan-indonesia",
     "title": "Kawasan Hutan & Fungsi Kawasan Indonesia",
     "category": "Kehutanan",

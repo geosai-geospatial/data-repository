@@ -947,7 +947,7 @@
     var sources = (opts.source ? "Sumber data: " + opts.source + "  ·  " : "") + "Peta dasar: Natural Earth";
     var projection = "Proyeksi: Lambert Silinder Sama-Luas, lintang standar " + formatDeg(Math.round(view.lat0 * 60) / 60, "y") + "  ·  Datum WGS 84";
     font(ctx, 12, 600);
-    var right = (opts.credit || "GeoSAI Data") + (opts.date ? " · " + opts.date : "");
+    var right = (opts.credit || "GeoSAI") + (opts.date ? " · " + opts.date : "");
     var rightW = ctx.measureText(right).width;
     ctx.fillText(fitText(ctx, sources, W - 80 - rightW - 40, 12, 400, 10), 40, y + 14);
     font(ctx, 12, 400);

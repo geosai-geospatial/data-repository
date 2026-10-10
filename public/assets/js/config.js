@@ -1,7 +1,7 @@
 // Site-wide settings. Edit these values before publishing.
 window.SITE = {
-  name: "GeoSAI Data",
-  tagline: "Data spasial Indonesia yang terkurasi, terdokumentasi, dan siap pakai.",
+  name: "GeoSAI",
+  tagline: "Layanan dan data geospasial untuk Indonesia: uji tuntas, penginderaan jauh, analisis, dan data spasial siap pakai.",
   contacts: {
     // Email is the main channel: every "ask" and "order" button opens a
     // pre-filled email to this address.

@@ -1,5 +1,96 @@
 [
   {
+    "id": "minimarket-alfamart-indomaret-jakarta-selatan",
+    "title": "Lokasi Minimarket Indomaret dan Alfamart di Jakarta Selatan",
+    "category": "Ritel",
+    "summary": "675 titik lokasi gerai Indomaret (372) dan Alfamart (303) di Kota Jakarta Selatan, lengkap dengan alamat, rating, jumlah ulasan, serta kelurahan dan kecamatan. Gratis, langsung unduh tanpa menghubungi admin.",
+    "description": [
+      "Titik lokasi gerai minimarket Indomaret dan Alfamart di Kota Jakarta Selatan, dikumpulkan dengan scraping data tempat publik di Google Maps. Berkas berisi 675 titik: 372 Indomaret dan 303 Alfamart, tersebar di 10 kecamatan dan 68 kelurahan.",
+      "Setiap titik memuat nama tempat, merek gerai, rating, jumlah ulasan, alamat, Google place_id, serta nama kelurahan, kecamatan, dan kota. Koordinat dalam WGS 84 (lintang/bujur desimal).",
+      "Catatan kualitas: data adalah potret saat scraping dan dapat berubah (gerai baru, tutup, atau pindah). 82 gerai belum punya ulasan; rating-nya dikosongkan (null), bukan 0. Teks nama dan alamat mengikuti Google Maps apa adanya (huruf kecil, campuran bahasa Indonesia dan Inggris). Merek ditentukan dari nama tempat; periksa ulang sebelum dipakai untuk keperluan kritis.",
+      "Cocok untuk analisis sebaran dan kepadatan ritel modern, analisis jangkauan layanan (service area), pemilihan lokasi usaha, dan studi persaingan Indomaret–Alfamart per kecamatan atau kelurahan."
+    ],
+    "coverage": "Kota Jakarta Selatan, 10 kecamatan, 675 titik",
+    "bbox": [
+      106.7402,
+      -6.3634,
+      106.8639,
+      -6.2048
+    ],
+    "source": "Scraping Google Maps (data tempat publik), diolah GeoSAI",
+    "year": "2026",
+    "format": [
+      "GeoJSON",
+      "CSV"
+    ],
+    "crs": "EPSG:4326 (WGS 84)",
+    "geometry": "Point",
+    "features": 675,
+    "size": "",
+    "attributes": [
+      {
+        "name": "nama_tempat",
+        "type": "Text",
+        "description": "Nama gerai seperti tercantum di Google Maps"
+      },
+      {
+        "name": "store",
+        "type": "Text",
+        "description": "Merek gerai: Indomaret atau Alfamart"
+      },
+      {
+        "name": "rating",
+        "type": "Real",
+        "description": "Rating Google Maps (1–5); null bila belum ada ulasan"
+      },
+      {
+        "name": "jml_ulasan",
+        "type": "Integer",
+        "description": "Jumlah ulasan Google Maps"
+      },
+      {
+        "name": "alamat",
+        "type": "Text",
+        "description": "Alamat gerai"
+      },
+      {
+        "name": "place_id",
+        "type": "Text",
+        "description": "Google Maps place_id (ID unik tempat)"
+      },
+      {
+        "name": "kelurahan",
+        "type": "Text",
+        "description": "Nama kelurahan"
+      },
+      {
+        "name": "kecamatan",
+        "type": "Text",
+        "description": "Nama kecamatan"
+      },
+      {
+        "name": "kota",
+        "type": "Text",
+        "description": "Nama kota (Kota Jakarta Selatan)"
+      },
+      {
+        "name": "latitude",
+        "type": "Real",
+        "description": "Lintang (WGS 84)"
+      },
+      {
+        "name": "longitude",
+        "type": "Real",
+        "description": "Bujur (WGS 84)"
+      }
+    ],
+    "price": "Gratis",
+    "published": true,
+    "free": true,
+    "download": "https://drive.google.com/drive/folders/17-5dm8o1z7oVz4A-jFeKPTC0IYneH5qo?usp=drive_link",
+    "updated": "2026-10-10"
+  },
+  {
     "id": "batas-provinsi-indonesia-250k",
     "title": "Batas Provinsi Indonesia (Peta Dasar BAKOSURTANAL 1:250.000)",
     "category": "Administrasi",

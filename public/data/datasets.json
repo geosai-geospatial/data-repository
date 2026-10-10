@@ -507,5 +507,119 @@
     "price": "Hubungi kami",
     "published": true,
     "updated": "2026-10-10"
+  },
+  {
+    "id": "iuphhk-hti-2020",
+    "title": "Areal Kerja IUPHHK-HTI (PBPH Hutan Tanaman) per 2020",
+    "category": "Kehutanan",
+    "summary": "271 poligon areal kerja Izin Usaha Pemanfaatan Hasil Hutan Kayu pada Hutan Tanaman Industri (kini PBPH-HT) di 24 provinsi, seluas ± 9,3 juta hektar menurut SK, lengkap dengan pemegang izin, nomor dan tanggal SK, serta SK penetapan areal kerja.",
+    "description": [
+      "Batas areal kerja IUPHHK-HTI (Hutan Tanaman Industri) dari peta skala 1:50.000 (270 poligon) dan 1:250.000 (1 poligon), dengan SK izin terbit antara 1995 dan Agustus 2020. Luas total menurut SK ± 9,3 juta hektar; luas per izin berkisar hingga ± 300 ribu hektar.",
+      "Sebaran per pulau: Kalimantan 139 izin (± 4,74 juta ha), Sumatera 102 izin (± 3,19 juta ha), Papua 9 izin (± 0,99 juta ha), Sulawesi 10 izin (± 0,18 juta ha), Nusa Tenggara 6 izin (± 0,13 juta ha), dan Maluku Utara 5 izin (± 0,07 juta ha). Provinsi terluas: Kalimantan Barat, Kalimantan Timur, Sumatera Selatan, Riau, dan Kalimantan Tengah.",
+      "Setiap poligon memuat nama pemegang izin, nomor dan tanggal SK, luas menurut SK, kode provinsi, serta (untuk 12 izin) nomor dan tanggal SK penetapan areal kerja 2006–2020. Kolom catatan menandai poligon hasil penetapan temu gelang, addendum 2019–2020, dan penyesuaian batas. Berkas juga menyimpan kolom bawaan konversi KML (Name, timestamp, icon, dll.) yang kosong.",
+      "Berguna untuk uji tuntas (due diligence) rantai pasok kayu, pulp, dan kertas, analisis tumpang-tindih dengan kawasan hutan, gambut, perkebunan, dan izin tambang, serta penapisan dan perencanaan proyek karbon dan restorasi."
+    ],
+    "coverage": "24 provinsi di Sumatera, Kalimantan, Sulawesi, Nusa Tenggara, Maluku Utara, dan Papua",
+    "bbox": [
+      95,
+      -11,
+      141,
+      6
+    ],
+    "image": "",
+    "source": "KLHK — peta areal kerja IUPHHK-HTI (Direktorat Jenderal Pengelolaan Hutan Lestari)",
+    "year": "2020",
+    "format": [
+      "SHP"
+    ],
+    "crs": "EPSG:4326 (WGS 84)",
+    "geometry": "Polygon",
+    "features": 271,
+    "size": "",
+    "attributes": [
+      {
+        "name": "FID",
+        "type": "Text",
+        "description": "ID objek"
+      },
+      {
+        "name": "ht_id",
+        "type": "Text",
+        "description": "ID izin (nomor dan tahun SK)"
+      },
+      {
+        "name": "namobj",
+        "type": "Text",
+        "description": "Nama pemegang izin (perusahaan)"
+      },
+      {
+        "name": "no_sk",
+        "type": "Text",
+        "description": "Nomor SK izin IUPHHK-HTI"
+      },
+      {
+        "name": "tgl_sk",
+        "type": "Text",
+        "description": "Tanggal SK izin (milidetik sejak 1970, format epoch)"
+      },
+      {
+        "name": "lssk",
+        "type": "Text",
+        "description": "Luas menurut SK (hektar)"
+      },
+      {
+        "name": "no_sk_tap",
+        "type": "Text",
+        "description": "Nomor SK penetapan areal kerja (jika ada)"
+      },
+      {
+        "name": "tgl_sk_tap",
+        "type": "Text",
+        "description": "Tanggal SK penetapan areal kerja (epoch milidetik; \"null\" jika tidak ada)"
+      },
+      {
+        "name": "remark",
+        "type": "Text",
+        "description": "Catatan (mis. penetapan temu gelang, addendum 2019/2020, pengaktifan kembali)"
+      },
+      {
+        "name": "kode_prov",
+        "type": "Text",
+        "description": "Kode provinsi (BPS/Kemendagri)"
+      },
+      {
+        "name": "metadata",
+        "type": "Text",
+        "description": "Sumber peta: IUPHHK_HTI_AR_50K atau IUPHHK_HTI_AR_250K"
+      },
+      {
+        "name": "fcode",
+        "type": "Text",
+        "description": "Kode unsur (ZM03040240)"
+      },
+      {
+        "name": "srs_id",
+        "type": "Text",
+        "description": "Sistem referensi (GCS_WGS_1984)"
+      },
+      {
+        "name": "st_area_sh",
+        "type": "Text",
+        "description": "Luas geometri (derajat persegi)"
+      },
+      {
+        "name": "st_length_",
+        "type": "Text",
+        "description": "Keliling geometri (derajat)"
+      },
+      {
+        "name": "system_ind",
+        "type": "Text",
+        "description": "ID sistem dari basis data sumber"
+      }
+    ],
+    "price": "Hubungi kami",
+    "published": true,
+    "updated": "2026-10-10"
   }
 ]

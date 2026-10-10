@@ -498,26 +498,39 @@
     });
   }
 
-  // Grid size for the display: the full image, scaled down to the limits.
-  function gridSize(info) {
-    var n = info.levels[0].spp;
-    var f = Math.max(1, info.width / MAX_SIDE, info.height / MAX_SIDE, Math.sqrt(info.width * info.height * n / MAX_VALUES));
-    return { width: Math.max(1, Math.round(info.width / f)), height: Math.max(1, Math.round(info.height / f)) };
+  // Grid size for a window of the image (full-resolution pixels), scaled
+  // down to the limits.
+  function gridSize(info, win, maxSide) {
+    var n = info.levels[0].spp, w = win ? win[2] - win[0] : info.width, h = win ? win[3] - win[1] : info.height;
+    maxSide = Math.min(maxSide || MAX_SIDE, MAX_SIDE);
+    var f = Math.max(1, w / maxSide, h / maxSide, Math.sqrt(w * h * n / MAX_VALUES));
+    return { width: Math.max(1, Math.round(w / f)), height: Math.max(1, Math.round(h / f)) };
   }
 
-  // Reads the display grid: one Float32Array per band (NaN = no data), with
-  // the grid's own geotransform. `opts.onProgress(fraction)` is called as
-  // chunks are decoded; `opts.decodeImage` replaces the browser JPEG/WebP decoder.
+  // Reads a display grid: one Float32Array per band (NaN = no data), with
+  // the grid's own geotransform, sampled nearest-neighbour from the
+  // smallest level that still has the grid's resolution.
+  // opts.window: [x0, y0, x1, y1] in full-resolution pixels (default: all);
+  // opts.maxSide: longest grid side (default and maximum 2048);
+  // opts.onProgress(fraction) is called as chunks are decoded;
+  // opts.cancelled() returning true stops reading (the grid is then partial);
+  // opts.decodeImage replaces the browser JPEG/WebP decoder.
   function readGrid(info, opts) {
     opts = opts || {};
-    var size = gridSize(info), gw = size.width, gh = size.height;
-    // The smallest level that still has at least the grid's resolution.
+    var win = opts.window || [0, 0, info.width, info.height];
+    win = [Math.max(0, Math.floor(win[0])), Math.max(0, Math.floor(win[1])), Math.min(info.width, Math.ceil(win[2])), Math.min(info.height, Math.ceil(win[3]))];
+    if (win[2] <= win[0] || win[3] <= win[1]) fail("empty window");
+    var size = gridSize(info, win, opts.maxSide), gw = size.width, gh = size.height;
     var img = info.levels[0];
-    info.levels.forEach(function (l) { if (l.width >= gw && l.height >= gh && l.width < img.width) img = l; });
-    var spp = img.spp, nBands = info.bands.length;
+    info.levels.forEach(function (l) {
+      var sx = l.width / info.width, sy = l.height / info.height;
+      if ((win[2] - win[0]) * sx >= gw && (win[3] - win[1]) * sy >= gh && l.width < img.width) img = l;
+    });
+    var spp = img.spp;
+    var lx = img.width / info.width, ly = img.height / info.height;
     var colAt = new Int32Array(gw), rowAt = new Int32Array(gh);
-    for (var i = 0; i < gw; i++) colAt[i] = Math.min(img.width - 1, Math.floor((i + 0.5) * img.width / gw));
-    for (var j = 0; j < gh; j++) rowAt[j] = Math.min(img.height - 1, Math.floor((j + 0.5) * img.height / gh));
+    for (var i = 0; i < gw; i++) colAt[i] = Math.min(img.width - 1, Math.floor((win[0] + (i + 0.5) * (win[2] - win[0]) / gw) * lx));
+    for (var j = 0; j < gh; j++) rowAt[j] = Math.min(img.height - 1, Math.floor((win[1] + (j + 0.5) * (win[3] - win[1]) / gh) * ly));
     var out = info.bands.map(function () { var a = new Float32Array(gw * gh); a.fill(NaN); return a; });
     var alpha = new Uint8Array(info.alphaBand >= 0 ? gw * gh : 0);
 
@@ -615,7 +628,7 @@
     var queue = reads.slice(), active = [];
     function worker() {
       var r = queue.shift();
-      if (!r) return Promise.resolve();
+      if (!r || (opts.cancelled && opts.cancelled())) return Promise.resolve();
       return info.src.read(r.start, r.end - r.start).then(function (buf) {
         return r.chunks.reduce(function (prev, c) {
           return prev.then(function () {
@@ -633,10 +646,10 @@
       if (alpha.length) {
         for (var g = 0; g < alpha.length; g++) if (alpha[g] === 2) out.forEach(function (a) { a[g] = NaN; });
       }
-      var t = info.transform, sx = info.width / gw, sy = info.height / gh;
+      var t = info.transform, sx = (win[2] - win[0]) / gw, sy = (win[3] - win[1]) / gh;
       return {
-        width: gw, height: gh, bands: out,
-        transform: [t[0], t[1] * sx, t[2] * sy, t[3], t[4] * sx, t[5] * sy],
+        width: gw, height: gh, bands: out, window: win,
+        transform: [t[0] + win[0] * t[1] + win[1] * t[2], t[1] * sx, t[2] * sy, t[3] + win[0] * t[4] + win[1] * t[5], t[4] * sx, t[5] * sy],
         sourceWidth: img.width, sourceHeight: img.height,
       };
     });
@@ -801,6 +814,24 @@
     return col >= 0 && col < grid.width && row >= 0 && row < grid.height ? row * grid.width + col : -1;
   }
 
+  // Full-resolution pixel window [x0, y0, x1, y1] covering a longitude/latitude
+  // box [west, south, east, north], clipped to the image; null if outside.
+  function pixelWindow(info, box) {
+    var t = info.transform, det = t[1] * t[5] - t[2] * t[4], b = [Infinity, Infinity, -Infinity, -Infinity], steps = 8;
+    for (var s = 0; s <= steps; s++) {
+      var f = s / steps;
+      [[box[0] + (box[2] - box[0]) * f, box[1]], [box[0] + (box[2] - box[0]) * f, box[3]],
+        [box[0], box[1] + (box[3] - box[1]) * f], [box[2], box[1] + (box[3] - box[1]) * f]].forEach(function (ll) {
+        var p = info.crs.fromLonLat(ll[0], ll[1]), ex = p[0] - t[0], ey = p[1] - t[3];
+        var col = (ex * t[5] - ey * t[2]) / det, row = (ey * t[1] - ex * t[4]) / det;
+        if (!isFinite(col) || !isFinite(row)) return;
+        b[0] = Math.min(b[0], col); b[1] = Math.min(b[1], row); b[2] = Math.max(b[2], col); b[3] = Math.max(b[3], row);
+      });
+    }
+    var w = [Math.max(0, Math.floor(b[0])), Math.max(0, Math.floor(b[1])), Math.min(info.width, Math.ceil(b[2])), Math.min(info.height, Math.ceil(b[3]))];
+    return w[2] > w[0] && w[3] > w[1] ? w : null;
+  }
+
   // Band roles from GDAL band descriptions (e.g. "B4 Red", "nir", "Merah").
   function guessBands(names) {
     var roles = {};
@@ -828,6 +859,7 @@
     mercatorLookup: mercatorLookup,
     project: project,
     gridIndexAt: gridIndexAt,
+    pixelWindow: pixelWindow,
     guessBands: guessBands,
     epsg: epsg,
     tmForward: tmForward,

@@ -249,3 +249,18 @@ test("the sample Sentinel-2 file decodes with its band names", async () => {
   const i = GT.gridIndexAt(grid, info.crs, 106.75269, -6.11004);
   assert.deepEqual(grid.bands.map((b) => b[i]), [980, 1082, 1580, 2562]);
 });
+
+test("a window of the image is read at full resolution with its own transform", async () => {
+  const w = 3000, h = 40, band = Array.from({ length: w * h }, (_, i) => (i % w) + 10000 * Math.floor(i / w));
+  const info = await GT.open(tiff({ width: w, height: h, bands: [band], bits: 32, epsg: 32748, tie: [500000, 9300000], scale: [10, 10], tile: [256, 16], compression: 8 }));
+  const box = [info.crs.toLonLat(500000 + 1000 * 10, 9300000 - 30 * 10), info.crs.toLonLat(500000 + 1500 * 10, 9300000 - 5 * 10)];
+  const win = GT.pixelWindow(info, [box[0][0], box[0][1], box[1][0], box[1][1]]);
+  assert.ok(Math.abs(win[0] - 1000) <= 1 && Math.abs(win[2] - 1500) <= 1 && Math.abs(win[1] - 5) <= 1 && Math.abs(win[3] - 30) <= 1, win.join());
+  const grid = await GT.readGrid(info, { window: [1000, 5, 1500, 30] });
+  assert.equal(grid.width, 500);
+  assert.equal(grid.height, 25);
+  assert.equal(grid.bands[0][0], 1000 + 10000 * 5);
+  assert.equal(grid.bands[0][24 * 500 + 499], 1499 + 10000 * 29);
+  assert.deepEqual(grid.transform, [510000, 10, 0, 9299950, 0, -10]);
+  assert.equal(GT.pixelWindow(info, [0, 0, 1, 1]), null);
+});

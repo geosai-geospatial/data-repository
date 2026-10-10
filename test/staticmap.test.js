@@ -236,6 +236,32 @@ test("categories: largest first, colour-blind-safe palette, rest grouped", () =>
   assert.deepEqual(SM.categoryFields(layer), ["K"]);
 });
 
+test("numeric fields: quantile ranges, light to dark, blanks grey", () => {
+  const features = [];
+  for (let i = 1; i <= 20; i++) features.push({ props: { N: i * 10, K: i % 3 ? "x" : "y", ID: "f" + i, T: "t" + i } });
+  features.push({ props: { N: null, K: "x", ID: "f21", T: "t21" } });
+  const layer = { features, fields: ["N", "K", "ID", "T"].map((name) => ({ name })) };
+  assert.equal(SM.fieldKind(layer, "N"), "number");
+  assert.equal(SM.fieldKind(layer, "K"), "category");
+  // Identifiers (one text value per feature) are not offered.
+  assert.deepEqual(SM.fieldOptions(layer), [{ name: "N", kind: "number" }, { name: "K", kind: "category" }]);
+
+  const r = SM.ranges(layer, "N");
+  assert.deepEqual(r.map((c) => [c.label, c.count]), [
+    ["10 – 40", 4], ["50 – 80", 4], ["90 – 120", 4], ["130 – 160", 4], ["170 – 200", 4], ["Tanpa nilai", 1],
+  ]);
+  assert.deepEqual(SM.classify(layer, "N"), r);
+  assert.deepEqual(SM.classify(layer, "K"), SM.categories(layer, "K"));
+
+  // Few distinct numbers are categories. A run of equal values pushes the break to the next value.
+  const codes = { features: [1, 2, 3, 1].map((v) => ({ props: { C: v } })), fields: [{ name: "C" }] };
+  assert.equal(SM.fieldKind(codes, "C"), "category");
+  const skewed = { features: Array.from({ length: 20 }, (_, i) => ({ props: { S: i < 17 ? 0 : i } })), fields: [{ name: "S" }] };
+  const rs = SM.ranges(skewed, "S");
+  assert.deepEqual(rs.map((c) => [c.label, c.count]), [["0", 17], ["17", 1], ["18", 1], ["19", 1]]);
+  assert.equal(new Set(rs.map((c) => c.color)).size, 4);
+});
+
 test("nice numbers, grid steps and degree labels", () => {
   assert.equal(SM.niceFloor(347), 200);
   assert.equal(SM.niceFloor(0.73), 0.5);

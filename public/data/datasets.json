@@ -1,57 +1,5 @@
 [
   {
-    "id": "kawasan-hutan-indonesia",
-    "title": "Kawasan Hutan & Fungsi Kawasan Indonesia",
-    "category": "Kehutanan",
-    "summary": "Fungsi kawasan hutan (HK, HL, HPT, HP, HPK) dan Areal Penggunaan Lain (APL) per provinsi.",
-    "description": [
-      "Poligon fungsi kawasan hutan berdasarkan SK penetapan / penunjukan kawasan hutan terbaru per provinsi, termasuk APL."
-    ],
-    "coverage": "Seluruh Indonesia",
-    "bbox": [
-      95,
-      -11,
-      141,
-      6
-    ],
-    "image": "",
-    "source": "Kompilasi dari publikasi resmi KLHK / Kementerian Kehutanan",
-    "year": "2024",
-    "format": [
-      "SHP",
-      "GeoPackage"
-    ],
-    "crs": "EPSG:4326 (WGS 84)",
-    "geometry": "Polygon",
-    "features": 0,
-    "size": "± 300 MB",
-    "attributes": [
-      {
-        "name": "FUNGSI",
-        "type": "Text",
-        "description": "Kode fungsi kawasan (HK, HL, HPT, HP, HPK, APL)"
-      },
-      {
-        "name": "SK_KAWASAN",
-        "type": "Text",
-        "description": "Dasar hukum (SK kawasan hutan)"
-      },
-      {
-        "name": "PROVINSI",
-        "type": "Text",
-        "description": "Provinsi"
-      },
-      {
-        "name": "LUAS_HA",
-        "type": "Double",
-        "description": "Luas (hektar)"
-      }
-    ],
-    "price": "Hubungi kami",
-    "published": true,
-    "updated": "2026-10-01"
-  },
-  {
     "id": "hgu-perkebunan-sawit",
     "title": "Konsesi Perkebunan Kelapa Sawit",
     "category": "Perkebunan",

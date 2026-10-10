@@ -614,25 +614,70 @@
     };
   }
 
+  // ---------- Clipping to the map frame ----------
+  // A polyline cut to a box (Liang–Barsky per segment): the pieces inside.
+  function clipLine(q, b) {
+    var out = [], cur = null;
+    for (var i = 0; i + 3 < q.length; i += 2) {
+      var x0 = q[i], y0 = q[i + 1], dx = q[i + 2] - x0, dy = q[i + 3] - y0, t0 = 0, t1 = 1, ok = true;
+      [[-dx, x0 - b[0]], [dx, b[2] - x0], [-dy, y0 - b[1]], [dy, b[3] - y0]].forEach(function (pq) {
+        if (!ok) return;
+        var pp = pq[0], qq = pq[1];
+        if (pp === 0) { if (qq < 0) ok = false; return; }
+        var r = qq / pp;
+        if (pp < 0) { if (r > t1) ok = false; else if (r > t0) t0 = r; }
+        else { if (r < t0) ok = false; else if (r < t1) t1 = r; }
+      });
+      if (!ok) { cur = null; continue; }
+      var ax = x0 + t0 * dx, ay = y0 + t0 * dy, bx = x0 + t1 * dx, by = y0 + t1 * dy;
+      if (!cur || t0 > 0) { cur = [ax, ay]; out.push(cur); }
+      cur.push(bx, by);
+      if (t1 < 1) cur = null;
+    }
+    return out.filter(function (l) { return l.length >= 4; });
+  }
+  // A ring cut to a box (Sutherland–Hodgman); empty when outside.
+  function clipRing(ring, b) {
+    var edges = [
+      function (p) { return p[0] >= b[0]; }, function (p) { return p[0] <= b[2]; },
+      function (p) { return p[1] >= b[1]; }, function (p) { return p[1] <= b[3]; },
+    ];
+    var cut = [
+      function (a, c) { var t = (b[0] - a[0]) / (c[0] - a[0]); return [b[0], a[1] + t * (c[1] - a[1])]; },
+      function (a, c) { var t = (b[2] - a[0]) / (c[0] - a[0]); return [b[2], a[1] + t * (c[1] - a[1])]; },
+      function (a, c) { var t = (b[1] - a[1]) / (c[1] - a[1]); return [a[0] + t * (c[0] - a[0]), b[1]]; },
+      function (a, c) { var t = (b[3] - a[1]) / (c[1] - a[1]); return [a[0] + t * (c[0] - a[0]), b[3]]; },
+    ];
+    var out = ring;
+    for (var e = 0; e < 4 && out.length; e++) {
+      var input = out, inn = edges[e];
+      out = [];
+      for (var i = 0; i < input.length; i++) {
+        var cur = input[i], prev = input[(i + input.length - 1) % input.length];
+        if (inn(cur)) {
+          if (!inn(prev)) out.push(cut[e](prev, cur));
+          out.push(cur);
+        } else if (inn(prev)) out.push(cut[e](prev, cur));
+      }
+    }
+    return out;
+  }
+
   // Selected path groups → GeoJSON features (WGS 84). Filled paths become
-  // polygons, stroked ones lines. Parts outside the frame are left out.
+  // polygons, stroked ones lines, cut to the frame as the PDF clips them.
   function pathFeatures(paths, groups, frame, toLonLat) {
     var features = [];
     groups.forEach(function (g) {
       g.items.forEach(function (idx) {
         var p = paths[idx];
-        var parts = p.parts.filter(function (part) {
-          for (var i = 0; i < part.pts.length; i += 2) if (inside(frame, part.pts[i], part.pts[i + 1])) return true;
-          return false;
-        });
-        if (!parts.length) return;
+        if (!overlaps(p.bbox, frame)) return;
         var props = { lapisan: g.name, warna_isi: hex(p.fill) || "", warna_grs: hex(p.stroke) || "", tebal_pt: p.stroke ? p.width : 0 };
-        var geom;
+        var geom, parts = p.parts;
         if (p.fill && !g.asLines) {
           var rings = parts.map(function (part) {
             var r = [];
             for (var i = 0; i < part.pts.length; i += 2) r.push([part.pts[i], part.pts[i + 1]]);
-            return r;
+            return clipRing(r, frame);
           }).filter(function (r) { return r.length >= 3 && Math.abs(ringArea(r)) > 1e-6; });
           if (!rings.length) return;
           var polys = nestRings(rings).map(function (poly) {
@@ -640,12 +685,16 @@
           });
           geom = polys.length === 1 ? { type: "Polygon", coordinates: polys[0] } : { type: "MultiPolygon", coordinates: polys };
         } else {
-          var lines = parts.map(function (part) {
-            var l = [];
-            for (var i = 0; i < part.pts.length; i += 2) l.push(toLonLat(part.pts[i], part.pts[i + 1]));
-            if (part.closed && l.length > 2) l.push(l[0].slice());
-            return l;
-          }).filter(function (l) { return l.length >= 2; });
+          var lines = [];
+          parts.forEach(function (part) {
+            var q = part.pts;
+            if (part.closed && q.length > 4) q = q.concat([q[0], q[1]]);
+            clipLine(q, frame).forEach(function (piece) {
+              var l = [];
+              for (var i = 0; i < piece.length; i += 2) l.push(toLonLat(piece[i], piece[i + 1]));
+              lines.push(l);
+            });
+          });
           if (!lines.length) return;
           geom = lines.length === 1 ? { type: "LineString", coordinates: lines[0] } : { type: "MultiLineString", coordinates: lines };
         }
@@ -1263,6 +1312,8 @@
     imageDpi: imageDpi,
     projector: projector,
     pathFeatures: pathFeatures,
+    clipLine: clipLine,
+    clipRing: clipRing,
     textLabels: textLabels,
     parseValue: parseValue,
     readGeoPdf: readGeoPdf,

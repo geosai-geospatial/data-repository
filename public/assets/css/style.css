@@ -771,3 +771,4 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
   .pdfx .maker-preview { position: sticky; top: 76px; }
   .pdfx .gv-map { height: calc(100vh - 220px); min-height: 420px; max-height: 760px; }
 }
+.pdfx [hidden] { display: none !important; }

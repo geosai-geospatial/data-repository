@@ -11,6 +11,7 @@ Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon 
 - `buat-peta.html`: free public map maker (*Buat Peta* in the menu). See below.
 - `konversi-data.html`: free public data converter (*Konversi* in the menu). See below.
 - `lihat-geotiff.html`: free public GeoTIFF viewer (*GeoTIFF* in the menu). See below.
+- `ekstrak-pdf.html`: free public PDF map extractor (*PDF Peta* in the menu). See below.
 
 Live site: https://geosai-geospatial.github.io/data-repository/
 
@@ -68,18 +69,34 @@ Public pages ──────────────────────�
 - **Sample data.** *Coba dengan citra Sentinel-2 contoh* loads `data/contoh-sentinel2-jakarta.tif`: a 512×512 crop (10 m, bands B2, B3, B4, B8, UTM 48S) of the North Jakarta coast (Muara Angke mangroves, PIK) from Sentinel-2A, 27 July 2024 (Copernicus Sentinel data 2024, via the Element 84 Earth Search archive).
 - **Usage counts.** Opening the sample and opening a file are GoatCounter events (`lihat-geotiff/contoh`, `lihat-geotiff/buka`), never the file name or contents.
 
+## Public PDF map extractor
+
+`ekstrak-pdf.html` turns a map that only exists as a PDF (a BNPB risk map, an RTRW annex, a permit map) back into GIS data, without signing up. A PDF page stores the map in page coordinates (points on paper); a printed map is drawn in one projection, so page → map coordinates is an affine transform, and everything else follows from that.
+
+1. **Georeference.** A GeoPDF (ISO 32000 `/VP` + `/Measure`, or the older OGC `/LGIDict`) is read automatically. For any other PDF the visitor picks the map's coordinate system (detected from notes such as *UTM Zona 50 S*), clicks a few labelled grid crosses and types their coordinates. Two points give scale and rotation; three or more a least-squares affine fit with the error (RMSE) shown per point, in metres and in millimetres on paper. Grid crosses and grid-line crossings drawn as vectors are found automatically (also when drawn as a bar and two half arms, as CorelDRAW does): clicks snap to them, and *Lengkapi dari grid* adds every cross whose position, from the current fit, falls on a multiple of the grid spacing, so two typed points become a fit over the whole grid. The map frame (dashed box) is found from the grid, the largest picture or the largest rectangle, and can be redrawn.
+2. **Extract**, all cut to the map frame:
+   - *Vector layers*: paths are read from pdf.js's operator list with their transforms, and grouped by how they are drawn (fill colour, stroke colour, width, dash), so each group is a layer (rivers, boundaries…) the visitor can name. Hovering a layer highlights it. Hidden PDF layers (optional content, e.g. CorelDRAW guidelines) are left out. Text becomes labelled points.
+   - *Legend colours → polygons*: for areas painted into the map picture (risk classes, land cover). The visitor makes a class per legend entry and picks its colours by clicking (or two clicks along a gradient bar). The map area is rendered, each pixel matched to the nearest picked colour within a CIE Lab tolerance (a 2¹⁸-entry lookup table), lines thinner than a set width on paper (roads in a similar colour) and specks smaller than a set area are removed, and the class edges are traced into polygons with holes (Douglas–Peucker simplified). *Sorot hasil di peta* shows what will be kept, with the same clean-up.
+   - *GeoTIFF*: the map area rendered at a chosen resolution (default: the resolution of the picture in the PDF) and written in the map's own coordinate system with the fit as its transform, so nothing is resampled. A class raster (palette, 0 = no data) comes with the colour classes.
+3. **Check and download.** *Periksa di peta dunia* overlays the georeferenced map (and the results) on OpenStreetMap or Esri imagery with a transparency slider. Vectors are written as GeoJSON, zipped shapefile or KML in WGS 84 by `geoconvert.js`.
+
+- **GeoSAI does not store the PDF.** pdf.js 4.10.38 (legacy build, Apache-2.0, vendored in `assets/vendor/pdfjs/`) reads and renders it in the browser; `assets/js/pdfgeo.js` does the geography (shared with the tests), `assets/js/pdfextract.js` is the page, and rendering bands are classified and written to GeoTIFF in a worker (`assets/js/pdfgeoworker.js`). The page has the same Content-Security-Policy and privacy statement as the converter; the basemap in the check tab reveals the area on screen to the tile server, as in the GeoTIFF viewer.
+- **Limits.** PDFs up to 150 MB. The rendered map area is capped at 60 million pixels (less on phones and low-memory devices); resolutions above that are disabled in the list. Supported coordinate systems: WGS 84 longitude/latitude, Web Mercator, UTM (WGS 84 or DGN95) and DGN95 TM-3 (by EPSG code). Other projections, password-protected PDFs and warped scans are not supported (the page says so).
+- **Sample.** *Coba dengan peta contoh* loads `data/contoh-peta.pdf`, built by `node scripts/build-sample-pdf.js`: an A4 map of Bali and Lombok in UTM 50 S with a picture of fictional coastal "hazard" zones (by distance to the coast, labelled as fictional), vector coastlines from `data/basemap.json` (Natural Earth, public domain), grid crosses every 20 km with labelled coordinates, towns, labels and a legend. It is not a GeoPDF, so it exercises the manual georeferencing.
+- **Usage counts.** Opening a file, opening the sample and extracting are GoatCounter events (`ekstrak-pdf/buka`, `ekstrak-pdf/contoh`, `ekstrak-pdf/ekstrak`), never the file name or contents.
+
 ## Visitor stats
 
 The admin page opens with a **Visitors** panel: visitors today, in the last 7 and 30 days (each compared with the period before), a bar per day for the last 30 days, the top pages, and where visitors come from.
 
-GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`, `lihat-geotiff`) loads GoatCounter's counting script in its `<head>`:
+GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`, `lihat-geotiff`, `ekstrak-pdf`) loads GoatCounter's counting script in its `<head>`:
 
 ```html
 <script data-goatcounter="https://geosai.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 ```
 
-The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page, `konversi-data.html` and `lihat-geotiff.html`.
+The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page, `konversi-data.html`, `lihat-geotiff.html` and `ekstrak-pdf.html`.
 
 - **No cookies.** GoatCounter works out unique visitors from a daily-rotating hash and stores no personal data, so no cookie banner is needed.
 - **Not counted:** the admin page (it has no script), local previews (`localhost`), automated browsers, and any browser where *Don't count my own visits on this device* is ticked in the panel (it sets GoatCounter's own `skipgc` flag). Tick it on each browser you use, so your own visits don't make the numbers look bigger.
@@ -123,7 +140,7 @@ node scripts/build-basemap.js ne_10m_admin_0_countries.geojson
 
 ```sh
 npm start        # serves public/ at http://localhost:8000
-npm test         # schema, static map, converter and GeoTIFF tests
+npm test         # schema, static map, converter, GeoTIFF and PDF extractor tests
 npm run validate # check public/data/datasets.json
 ```
 

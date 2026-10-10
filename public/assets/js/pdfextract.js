@@ -292,7 +292,7 @@
       if (state[k]) { view.removeLayer(state[k].overlay); if (state[k].mask) view.removeLayer(state[k].mask); state[k] = null; }
     });
     Object.keys(layers).forEach(function (k) { layers[k].clearLayers(); });
-    state.points = []; state.fit = null; state.geo = null; state.intervalTouched = false;
+    state.points = []; state.fit = null; state.geo = null; state.unsupportedGeo = false; state.intervalTouched = false;
     state.paths = []; state.images = []; state.nodes = []; state.groups = []; state.labels = [];
     setMode(null);
     clearResults();
@@ -352,6 +352,12 @@
 
   function setupGeoref(vp) {
     var epsg = 4326, note;
+    // Projected GeoPDF points in a projection we cannot convert are no use.
+    if (vp && !PG.crs(vp.epsg) && vp.points.some(function (p) { return p.lon == null; })) {
+      vp = null;
+      state.geo = null;
+      state.unsupportedGeo = true;
+    }
     if (vp) {
       epsg = vp.epsg && PG.crs(vp.epsg) ? vp.epsg : 4326;
       var crs = PG.crs(epsg);
@@ -364,14 +370,16 @@
     } else {
       var d = state.detected;
       if (d) epsg = d.epsg;
-      note = "PDF ini belum berkoordinat. Beri titik kontrol di bawah." + (d ? " Keterangan di peta menyebut <strong>" + esc(d.label) + "</strong>, jadi sistem koordinat itu sudah dipilih." : "");
+      note = (state.unsupportedGeo ? "Koordinat GeoPDF di file ini memakai proyeksi yang belum didukung. " : "PDF ini belum berkoordinat. ") + "Beri titik kontrol di bawah." + (d ? " Keterangan di peta menyebut <strong>" + esc(d.label) + "</strong>, jadi sistem koordinat itu sudah dipilih." : "");
     }
     state.epsg = epsg;
+    // Coordinates from the file come with their own system.
+    crsSel.disabled = $("px-epsg").disabled = $("px-entry").disabled = !!vp;
     if (crsSel.querySelector('option[value="' + epsg + '"]')) { crsSel.value = String(epsg); $("px-epsg-wrap").hidden = true; }
     else { crsSel.value = "other"; $("px-epsg").value = String(epsg); $("px-epsg-wrap").hidden = false; }
     state.entry = PG.crs(epsg).geographic ? "lonlat" : "map";
     $("px-entry").value = state.entry;
-    $("px-entry-wrap").hidden = PG.crs(epsg).geographic;
+    $("px-entry-wrap").hidden = PG.crs(epsg).geographic || !!vp;
     $("px-geo-note").innerHTML = note;
   }
 
@@ -427,7 +435,7 @@
     refreshMinHint();
     $("px-tab-map").disabled = !state.fit;
     mapDirty = true;
-    if (currentTab === "map") updateWorldMap();
+    if (currentTab === "map") { if (state.fit) updateWorldMap(); else showTab("pdf"); }
   }
 
   function snap(pt) {
@@ -562,7 +570,7 @@
     if (f.kind === "similarity") txt += "skala dan rotasi dari 2 titik (galat belum bisa diperiksa; tambah titik atau lengkapi dari grid).";
     else {
       var sheet = f.rmse / PG.fitScale(f) * MM_PER_PT;
-      txt += "galat rata-rata (RMSE) " + groundText(f.rmse) + " ≈ " + fmt(sheet, sheet < 0.1 ? 2 : 1) + " mm di kertas.";
+      txt += "galat rata-rata (RMSE) " + groundText(f.rmse) + (sheet < 0.01 ? ", di bawah 0,01" : " ≈ " + fmt(sheet, sheet < 0.1 ? 2 : 1)) + " mm di kertas.";
       if (sheet > 1) {
         el.className = "px-fit warn";
         var worst = f.residuals.indexOf(Math.max.apply(null, f.residuals)), wp = usable()[worst], mi = manualPoints().indexOf(wp);
@@ -577,7 +585,7 @@
   // "Complete from grid": the grid spacing in map units, guessed from the
   // crosses found in the PDF and the current fit.
   function renderGridControls() {
-    var box = $("px-grid"), can = !!state.fit && state.nodes.length >= 3 && state.lattice;
+    var box = $("px-grid"), can = !!state.fit && state.nodes.length >= 3 && state.lattice && !state.geo;
     box.hidden = !can;
     $("px-snap-wrap").hidden = !state.nodes.length || !!state.geo;
     $("px-node-count").textContent = fmt(state.nodes.length);
@@ -890,6 +898,7 @@
   $("px-dpi").addEventListener("change", dpiHint);
 
   function refreshAll() {
+    state.fit = PG.fit(usable());
     drawFrame();
     drawNodes();
     refreshGroups();

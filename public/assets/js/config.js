@@ -14,5 +14,10 @@ window.SITE = {
     // Channels shown as "segera hadir" (coming soon). Remove a name once its link is set above.
     comingSoon: ["Telegram", "Discord"],
   },
+  // GoatCounter site code (geosai.goatcounter.com), used by the admin's
+  // Visitors panel. The counting script itself is in the <head> of each page.
+  analytics: {
+    goatcounter: "geosai",
+  },
   responseTime: "Biasanya membalas dalam 1×24 jam (hari kerja, WIB).",
 };

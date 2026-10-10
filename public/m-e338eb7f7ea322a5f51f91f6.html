@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://api.github.com; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://api.github.com https://geosai.goatcounter.com; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f5e4b'/%3E%3Cpath d='M7 10v14l6-3 6 3 6-3V7l-6 3-6-3z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +33,42 @@
 
     <!-- Logged in: list -->
     <section id="view-list" hidden>
+      <div class="section-head">
+        <div>
+          <h2>Visitors</h2>
+          <p>How many people visit the website. A visitor is counted once per page per day, and visits from this device are skipped while the box below is ticked.</p>
+        </div>
+        <div class="admin-actions" id="visitors-actions">
+          <button class="btn btn-email btn-inline" id="visitors-refresh" type="button">Refresh</button>
+          <a class="btn btn-email btn-inline" id="visitors-open" target="_blank" rel="noopener">Full stats ↗</a>
+        </div>
+      </div>
+      <div class="panel visitors">
+        <div id="visitors-setup" hidden>
+          <p>No GoatCounter site is set. Put its code in <code>analytics.goatcounter</code> in <code>assets/js/config.js</code>. See the README.</p>
+        </div>
+        <form id="visitors-key" class="admin-form visitors-key" hidden>
+          <p>Paste a GoatCounter API key to see the numbers here (GoatCounter → Settings → API → New API key, with only <i>Read statistics</i> ticked). It is kept on this device.</p>
+          <label>GoatCounter API key<input name="key" type="password" autocomplete="off" spellcheck="false" required></label>
+          <p class="form-error" id="visitors-key-error" role="alert" hidden></p>
+          <button class="btn btn-primary btn-inline" type="submit">Show visitors</button>
+        </form>
+        <div id="visitors-stats" hidden>
+          <p class="small" id="visitors-status" role="status" hidden></p>
+          <div class="stats" id="visitors-tiles"></div>
+          <h3>Visitors per day, last 30 days</h3>
+          <div class="visitors-chart" id="visitors-chart"></div>
+          <div class="visitors-lists">
+            <div><h3>Top pages</h3><ol class="top" id="visitors-pages"></ol></div>
+            <div><h3>Where visitors come from</h3><ol class="top" id="visitors-refs"></ol></div>
+          </div>
+          <div class="visitors-foot">
+            <label class="check"><input type="checkbox" id="visitors-self"> Don't count my own visits on this device</label>
+            <button class="link" id="visitors-forget" type="button">Forget API key</button>
+          </div>
+        </div>
+      </div>
+
       <div class="section-head">
         <div>
           <h2>Datasets</h2>
@@ -143,6 +179,7 @@
 <script src="assets/js/app.js"></script>
 <script src="assets/js/schema.js"></script>
 <script src="assets/js/staticmap.js"></script>
+<script src="assets/js/visitors.js"></script>
 <script src="assets/js/admin.js"></script>
 </body>
 </html>

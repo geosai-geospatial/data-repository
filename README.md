@@ -55,7 +55,7 @@ The panel reads the totals back through GoatCounter's API (`assets/js/visitors.j
 Setup (once):
 
 1. In GoatCounter *Settings*, set the time zone to *Asia/Jakarta*, so "today" matches yours. GoatCounter's free plan is for non-commercial use; a business site needs one of its paid plans (or you can self-host GoatCounter).
-2. *Settings → API → New API key*, with only **Read statistics** ticked. Paste it into the Visitors panel. It is stored in this browser only and sent only to `geosai.goatcounter.com`. *Forget API key* or *Sign out* removes it.
+2. Open [geosai.goatcounter.com/user/api](https://geosai.goatcounter.com/user/api) (account menu, top right → *API*; not under *Settings*). Under *Add new API Token*, tick only **Read statistics**, pick the site, and click *Add new*. Paste it into the Visitors panel. It is stored in this browser only and sent only to `geosai.goatcounter.com`. *Forget API key* or *Sign out* removes it.
 
 *Full stats ↗* opens GoatCounter's own dashboard, which also shows browsers, screen sizes, countries, and older periods.
 

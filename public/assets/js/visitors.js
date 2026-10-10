@@ -211,7 +211,10 @@
   self.checked = read(NO_COUNT) === "t";
   self.addEventListener("change", function () { store(NO_COUNT, self.checked ? "t" : null); });
 
-  if (code) $("visitors-open").href = "https://" + code + ".goatcounter.com";
+  if (code) {
+    $("visitors-open").href = "https://" + code + ".goatcounter.com";
+    $("visitors-api-link").href = "https://" + code + ".goatcounter.com/user/api";
+  }
   else $("visitors-actions").hidden = true;
 
   var resizing;

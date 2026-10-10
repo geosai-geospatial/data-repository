@@ -76,6 +76,11 @@
           <label>ID (URL slug) *<input name="id" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" placeholder="e.g. iup-minerba-2025"><span class="hint">Lowercase, digits, dashes. Cannot be changed later.</span></label>
           <label>Category *<input name="category" required list="categories" maxlength="60"></label>
           <label>Price<input name="price" maxlength="100" placeholder="Hubungi kami"></label>
+          <fieldset class="span-2">
+            <legend>Free dataset</legend>
+            <label class="check"><input type="checkbox" name="free"> Free: visitors download it directly, without contacting us</label>
+            <label>Public download link<input name="download" type="url" maxlength="500" placeholder="https://drive.google.com/drive/folders/…"><span class="hint">Required when Free is ticked. Shown on the public site as the “Unduh gratis” button, and the price shows as “Gratis”. Set the Drive folder's sharing to <i>Anyone with the link – Viewer</i>.</span></label>
+          </fieldset>
           <label class="span-2">Summary<textarea name="summary" rows="2" maxlength="600"></textarea></label>
           <label class="span-2">Description<textarea name="description" rows="6"></textarea><span class="hint">Separate paragraphs with a blank line.</span></label>
           <label>Coverage<input name="coverage" maxlength="200"></label>

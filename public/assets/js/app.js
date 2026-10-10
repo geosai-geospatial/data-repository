@@ -17,6 +17,7 @@
     source: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
     clock: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
     shield: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+    download: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg>',
     email: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>',
   };
 
@@ -25,6 +26,7 @@
     pertambangan: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>',
     kehutanan: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 6 10h3l-4 6h14l-4-6h3L12 2z"/><path d="M12 16v6"/></svg>',
     perkebunan: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z"/><path d="M2 21c0-3 1.9-5.4 5.2-6.1 2.4-.5 4.8-2 5.8-3.9"/></svg>',
+    transportasi: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3 4 21M16 3l4 18M12 4v2M12 10v3M12 17v3"/></svg>',
     administrasi: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>',
   };
 
@@ -180,6 +182,7 @@
   function thumb(d, withBadge) {
     var key = catKey(d.category);
     var badge = withBadge ? '<span class="badge solid badge-float">' + esc(d.category) + "</span>" : "";
+    if (withBadge && d.free) badge += '<span class="badge free badge-free">Gratis</span>';
     if (d.image) {
       return '<div class="thumb has-img t-' + key + '">' + badge +
         '<img src="' + esc(imageUrl(d)) + '" alt="" loading="lazy">' +
@@ -211,8 +214,11 @@
       (d.coverage ? "<span>" + ICONS.pin + esc(d.coverage) + "</span>" : "") +
       (d.year ? "<span>" + ICONS.calendar + "Data " + esc(d.year) + "</span>" : "") +
       "</div></div>" +
-      '<div class="card-foot"><span class="price"><small>Harga</small>' + esc(d.price || "Hubungi kami") + "</span>" +
-      '<span class="more">Lihat detail ' + ICONS.arrow + "</span></div>" +
+      (d.free
+        ? '<div class="card-foot"><span class="price free"><small>Harga</small>Gratis</span>' +
+          '<span class="more">Unduh gratis ' + ICONS.arrow + "</span></div>"
+        : '<div class="card-foot"><span class="price"><small>Harga</small>' + esc(d.price || "Hubungi kami") + "</span>" +
+          '<span class="more">Lihat detail ' + ICONS.arrow + "</span></div>") +
       "</a>"
     );
   }
@@ -273,16 +279,19 @@
     var state = { cat: "Semua", q: "" };
     thumbFallback(gridEl);
 
-    chipsEl.innerHTML = ["Semua"].concat(cats).map(function (c) {
-      var n = c === "Semua" ? DATASETS.length : counts[c];
+    // "Gratis" is a filter across categories, shown only when a free dataset exists.
+    var FREE = "Gratis";
+    var nFree = DATASETS.filter(function (d) { return d.free; }).length;
+    chipsEl.innerHTML = ["Semua"].concat(nFree ? [FREE] : []).concat(cats).map(function (c) {
+      var n = c === "Semua" ? DATASETS.length : c === FREE ? nFree : counts[c];
       return '<button class="chip" type="button" data-cat="' + esc(c) + '">' + esc(c) + '<span class="n">' + n + "</span></button>";
     }).join("");
 
     function draw() {
       var q = state.q.toLowerCase();
       var list = DATASETS.filter(function (d) {
-        var inCat = state.cat === "Semua" || d.category === state.cat;
-        var hay = (d.title + " " + d.summary + " " + d.category + " " + d.coverage).toLowerCase();
+        var inCat = state.cat === "Semua" || (state.cat === FREE ? d.free : d.category === state.cat);
+        var hay = (d.title + " " + d.summary + " " + d.category + " " + d.coverage + (d.free ? " gratis free" : "")).toLowerCase();
         return inCat && (!q || hay.indexOf(q) >= 0);
       });
       Array.prototype.forEach.call(chipsEl.children, function (b) {
@@ -338,6 +347,7 @@
     root.innerHTML =
       '<nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Katalog</a><span>/</span>' + esc(d.category) + "</nav>" +
       '<div class="detail-head"><span class="badge cat">' + esc(d.category) + "</span>" +
+      (d.free ? ' <span class="badge free">Gratis · unduh langsung</span>' : "") +
       "<h1>" + esc(d.title) + '</h1><p class="lead">' + esc(d.summary) + "</p>" +
       '<div class="detail-facts">' +
       (d.coverage ? "<span>" + ICONS.pin + esc(d.coverage) + "</span>" : "") +
@@ -361,7 +371,20 @@
           "</tbody></table></div></section>"
         : "") +
       "</div>" +
-      '<aside><div class="panel buy">' +
+      '<aside>' + (d.free ? freePanel(d, attrs) : buyPanel(d, attrs)) +
+      '<div class="panel"><h2>Spesifikasi</h2><table class="specs"><tbody>' +
+      specs.map(function (s) { return "<tr><th>" + esc(s[0]) + "</th><td>" + esc(s[1]) + "</td></tr>"; }).join("") +
+      "</tbody></table></div></aside></div>" +
+      (related.length ? '<section class="related"><h2>Dataset lainnya</h2><div class="grid">' + related.map(card).join("") + "</div></section>" : "");
+
+    thumbFallback(root);
+    // If the image is missing (e.g. still deploying), hide the panel instead of showing a broken image.
+    var img = root.querySelector(".coverage-img img");
+    if (img) img.addEventListener("error", function () { img.closest(".panel").hidden = true; });
+  }
+
+  function buyPanel(d, attrs) {
+    return '<div class="panel buy">' +
       '<p class="price-label">Harga</p><p class="price-big">' + esc(d.price || "Hubungi kami") + "</p>" +
       '<p class="small">' + ICONS.clock + esc(SITE.responseTime) + "</p>" +
       contactButtons(d) +
@@ -374,16 +397,25 @@
       "</ul>" +
       '<hr class="divider"><h3>Cara memesan</h3>' +
       '<ol class="steps"><li>Klik <strong>Pesan via Email</strong>; nama dataset sudah terisi, tinggal lengkapi wilayah dan keperluan.</li><li>Kami kirim penawaran, sampel atribut, dan pratinjau geometri.</li><li>Setelah pembayaran dikonfirmasi, file dikirim via tautan unduhan.</li></ol>' +
-      "</div>" +
-      '<div class="panel"><h2>Spesifikasi</h2><table class="specs"><tbody>' +
-      specs.map(function (s) { return "<tr><th>" + esc(s[0]) + "</th><td>" + esc(s[1]) + "</td></tr>"; }).join("") +
-      "</tbody></table></div></aside></div>" +
-      (related.length ? '<section class="related"><h2>Dataset lainnya</h2><div class="grid">' + related.map(card).join("") + "</div></section>" : "");
+      "</div>";
+  }
 
-    thumbFallback(root);
-    // If the image is missing (e.g. still deploying), hide the panel instead of showing a broken image.
-    var img = root.querySelector(".coverage-img img");
-    if (img) img.addEventListener("error", function () { img.closest(".panel").hidden = true; });
+  // Free datasets: one download button, no email, no admin in the loop.
+  function freePanel(d, attrs) {
+    return '<div class="panel buy free-panel">' +
+      '<p class="price-label">Harga</p><p class="price-big">Gratis</p>' +
+      '<p class="small">' + ICONS.check + "Tanpa daftar, tanpa menghubungi admin.</p>" +
+      '<a class="btn btn-primary btn-download" href="' + esc(d.download) + '" target="_blank" rel="noopener noreferrer">' + ICONS.download + "Unduh gratis</a>" +
+      '<p class="email-alt">Tautan membuka folder Google Drive di tab baru. Tidak perlu akun Google.</p>' +
+      '<hr class="divider"><h3>Cara mengunduh</h3>' +
+      '<ol class="steps"><li>Klik <strong>Unduh gratis</strong>.</li><li>Di Google Drive, klik <strong>Download</strong> (ikon ⤓ di kanan atas) untuk mengunduh semua file sebagai ZIP.</li><li>Ekstrak ZIP, lalu buka file ' + esc((d.format || []).join(" / ") || "data") + " di QGIS atau ArcGIS.</li></ol>" +
+      '<hr class="divider"><h3>Yang Anda dapatkan</h3><ul class="checklist">' +
+      "<li>" + ICONS.check + "File " + esc((d.format || []).join(" / ") || "data") + "</li>" +
+      (attrs.length ? "<li>" + ICONS.check + "Kamus atribut (" + attrs.length + " kolom) di halaman ini</li>" : "") +
+      "<li>" + ICONS.check + "Catatan sumber; cantumkan sumbernya saat data dipakai</li>" +
+      "</ul>" +
+      '<p class="email-alt">Tautan tidak bisa dibuka atau ada pertanyaan? <a href="' + esc(mailto(mailTemplate("ask", d))) + '">Email kami</a>.</p>' +
+      "</div>";
   }
 
   // `updated` changes on every admin save, so a replaced image is not served stale from cache.

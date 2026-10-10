@@ -217,7 +217,7 @@
       var status = d.published === false ? '<span class="badge">Draft</span>' : '<span class="badge cat">Published</span>';
       return (
         "<tr><td><strong>" + esc(d.title) + '</strong><div class="small"><a href="dataset.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">' + esc(d.id) + "</a></div></td>" +
-        "<td>" + esc(d.category) + "</td><td>" + esc(d.price) + "</td><td>" + status + "</td><td>" + esc(d.updated || "") + "</td>" +
+        "<td>" + esc(d.category) + "</td><td>" + (d.free ? '<span class="badge free">Free</span>' : esc(d.price)) + "</td><td>" + status + "</td><td>" + esc(d.updated || "") + "</td>" +
         '<td class="row-actions">' +
         (state.links[d.id] ? '<a class="link" href="' + esc(state.links[d.id]) + '" target="_blank" rel="noopener noreferrer">Drive ↗</a>' : "") +
         '<button type="button" class="link" data-edit="' + esc(d.id) + '">Edit</button>' +
@@ -466,6 +466,8 @@
       f.format.value = (d.format || []).join(", ");
       (d.bbox || []).forEach(function (v, i) { f["bbox" + i].value = v; });
       f.published.checked = d.published !== false;
+      f.free.checked = d.free === true;
+      f.download.value = d.download || "";
       (d.attributes || []).forEach(attrRow);
     } else {
       attrRow();
@@ -515,6 +517,8 @@
         return a;
       }).filter(function (a) { return a.name || a.type || a.description; }),
       published: f.published.checked,
+      free: f.free.checked,
+      download: f.download.value,
     };
   }
 

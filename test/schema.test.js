@@ -60,3 +60,16 @@ test("rejects duplicate ids and non-arrays", () => {
   assert.throws(() => validateAll([d, d]), /Duplicate id/);
   assert.throws(() => validateAll({}), /array/);
 });
+
+test("free datasets need an https download link and show as Gratis", () => {
+  const base = { id: "a", title: "T", category: "C" };
+  const d = validate({ ...base, free: true, download: "https://drive.google.com/drive/folders/x", price: "Rp 1" });
+  assert.equal(d.free, true);
+  assert.equal(d.download, "https://drive.google.com/drive/folders/x");
+  assert.equal(d.price, "Gratis");
+  assert.throws(() => validate({ ...base, free: true }), /download/);
+  assert.throws(() => validate({ ...base, free: true, download: "javascript:alert(1)" }), /https/);
+  assert.throws(() => validate({ ...base, free: true, download: "http://example.com/a.zip" }), /https/);
+  const paid = validate({ ...base, download: "https://example.com/a.zip" });
+  assert.ok(!("free" in paid) && !("download" in paid));
+});

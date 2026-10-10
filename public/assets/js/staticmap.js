@@ -189,7 +189,9 @@
   // ---------- ZIP (shapefiles are usually shared zipped) ----------
   // Reads the central directory and inflates the wanted entries with the
   // browser's DecompressionStream. ZIP64 (archives over 4 GB) is not supported.
-  function readZip(buffer, wanted) {
+  // maxBytes (optional) caps the unzipped size of the wanted entries, so a
+  // small archive cannot inflate past what the browser can hold in memory.
+  function readZip(buffer, wanted, maxBytes) {
     var dv = new DataView(buffer), u8 = new Uint8Array(buffer);
     var eocd = -1;
     for (var i = buffer.byteLength - 22; i >= Math.max(0, buffer.byteLength - 65557); i--) {
@@ -205,6 +207,7 @@
       var entry = {
         method: dv.getUint16(p + 10, true),
         size: dv.getUint32(p + 20, true),
+        unzipped: dv.getUint32(p + 24, true),
         name: new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nameLen)),
         offset: dv.getUint32(p + 42, true),
       };
@@ -212,6 +215,8 @@
       if (/(^|\/)(__MACOSX\/|\.)/.test(entry.name) || /\/$/.test(entry.name) || !wanted(entry.name)) continue;
       entries.push(entry);
     }
+    var total = entries.reduce(function (sum, e) { return sum + e.unzipped; }, 0);
+    if (maxBytes && total > maxBytes) fail("The unzipped files are too large for this browser (" + Math.round(total / 1048576) + " MB).");
     return Promise.all(entries.map(function (e) {
       var start = e.offset + 30 + dv.getUint16(e.offset + 26, true) + dv.getUint16(e.offset + 28, true);
       var data = u8.subarray(start, start + e.size);
@@ -1072,6 +1077,7 @@
     parseShapefile: parseShapefile,
     parseDbf: parseDbf,
     parsePrj: parsePrj,
+    geojsonCrs: geojsonCrs,
     readZip: readZip,
     tmInverse: tmInverse,
     categoryFields: categoryFields,

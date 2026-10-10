@@ -391,6 +391,7 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .admin-table td { vertical-align: top; }
 .admin-table .small { font-size: 12px; }
 .row-actions { white-space: nowrap; text-align: right; }
+.admin-table tr.is-hidden td:not(.row-actions) { opacity: 0.55; }
 .link { background: none; border: 0; padding: 4px 6px; font: inherit; font-size: 14px; font-weight: 600; color: var(--brand); cursor: pointer; }
 .link.danger { color: #b42318; }
 .admin-form .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }

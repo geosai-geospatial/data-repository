@@ -50,7 +50,7 @@
       <div class="section-head">
         <div>
           <h2>Datasets</h2>
-          <p>Create, edit, publish or delete the datasets shown in the catalog. Changes appear on the public site about a minute after saving.</p>
+          <p>Create, edit, hide or delete the datasets shown in the catalog. Hidden datasets stay here but are not shown on the website. Changes appear on the public site about a minute after saving.</p>
         </div>
         <div class="admin-actions">
           <span class="who" id="who"></span>
@@ -139,7 +139,7 @@
             <button type="button" class="btn btn-email btn-inline" id="btn-add-attr">+ Add attribute</button>
           </fieldset>
           <label class="span-2">Google Drive folder (admin only)<input name="drive" type="url" maxlength="500" placeholder="https://drive.google.com/drive/folders/…"><span class="hint">Shown only here in the admin, as a “Drive ↗” shortcut. Not on the public site, but stored in the public repository, so keep the folder's sharing set to Restricted.</span></label>
-          <label class="check span-2"><input type="checkbox" name="published" checked> Published (visible in the public catalog)</label>
+          <label class="check span-2"><input type="checkbox" name="published" checked> Visible on the website (untick to hide)</label>
         </div>
         <p class="form-error" id="form-error" role="alert" hidden></p>
         <div class="form-actions">

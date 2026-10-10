@@ -214,12 +214,14 @@
       return;
     }
     $("rows").innerHTML = state.items.map(function (d) {
-      var status = d.published === false ? '<span class="badge">Draft</span>' : '<span class="badge cat">Published</span>';
+      var hidden = d.published === false;
+      var status = hidden ? '<span class="badge">Hidden</span>' : '<span class="badge cat">Visible</span>';
       return (
-        "<tr><td><strong>" + esc(d.title) + '</strong><div class="small"><a href="dataset.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">' + esc(d.id) + "</a></div></td>" +
+        "<tr" + (hidden ? ' class="is-hidden"' : "") + "><td><strong>" + esc(d.title) + '</strong><div class="small"><a href="dataset.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">' + esc(d.id) + "</a></div></td>" +
         "<td>" + esc(d.category) + "</td><td>" + (d.free ? '<span class="badge free">Free</span>' : esc(d.price)) + "</td><td>" + status + "</td><td>" + esc(d.updated || "") + "</td>" +
         '<td class="row-actions">' +
         (state.links[d.id] ? '<a class="link" href="' + esc(state.links[d.id]) + '" target="_blank" rel="noopener noreferrer">Drive ↗</a>' : "") +
+        '<button type="button" class="link" data-toggle="' + esc(d.id) + '">' + (hidden ? "Show" : "Hide") + "</button>" +
         '<button type="button" class="link" data-edit="' + esc(d.id) + '">Edit</button>' +
         '<button type="button" class="link danger" data-delete="' + esc(d.id) + '">Delete</button></td></tr>'
       );
@@ -236,6 +238,21 @@
   $("rows").addEventListener("click", function (e) {
     var edit = e.target.getAttribute("data-edit");
     var del = e.target.getAttribute("data-delete");
+    var toggle = e.target.getAttribute("data-toggle");
+    if (toggle) {
+      var t = state.items.filter(function (x) { return x.id === toggle; })[0];
+      var reveal = t.published === false;
+      e.target.disabled = true;
+      // Flip only the visibility flag on the latest file; "updated" is about the data, so it stays.
+      commit(function (items) {
+        var x = items.filter(function (x) { return x.id === toggle; })[0];
+        if (!x) throw new Error("This dataset was deleted in the meantime. Reload the page.");
+        x.published = reveal;
+        return items;
+      }, "CMS: " + (reveal ? "show " : "hide ") + toggle).then(function (items) {
+        saved(items, (reveal ? "“" + t.title + "” is visible on the website again." : "Hid “" + t.title + "” from the website."));
+      }).catch(function (err) { e.target.disabled = false; alert(err.message); });
+    }
     if (edit) openForm(state.items.filter(function (d) { return d.id === edit; })[0]);
     if (del) {
       var d = state.items.filter(function (x) { return x.id === del; })[0];

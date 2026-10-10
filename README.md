@@ -35,6 +35,24 @@ Public pages ──────────────────────�
 - **Free datasets.** Tick *Free* and paste a public download link (usually the Drive folder, shared as *Anyone with the link – Viewer*). The catalog then shows a *Gratis* badge and filter, the price reads *Gratis*, and the detail page replaces the email/order panel with an *Unduh gratis* button that opens the link, so visitors download without contacting you. The link is stored in `datasets.json`, so it is public.
 - **IDs.** The dataset ID is the URL slug (`dataset.html?id=…`) and is fixed after creation so links shared with buyers keep working.
 
+## Visitor stats
+
+The admin page opens with a **Visitors** panel: visitors today, in the last 7 and 30 days (each compared with the period before), a bar per day for the last 30 days, the top pages, and where visitors come from.
+
+GitHub Pages has no server, so it cannot count visits itself. Each public page sends one request to [GoatCounter](https://www.goatcounter.com) (`countVisit` in `assets/js/app.js`), and the panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`).
+
+- **No cookies and no third-party script.** The count is a single image request. GoatCounter works out unique visitors from a daily-rotating hash and stores no personal data, so no cookie banner is needed.
+- **Not counted:** the admin page, local previews (`localhost`), automated browsers, and any device where *Don't count my own visits on this device* is ticked in the panel. Tick it on each browser you use, so your own visits don't make the numbers look bigger.
+- **A visitor** is one person on one page in a day, so 3 pages visited by 1 person count as 3.
+
+Setup (once):
+
+1. Sign up at [goatcounter.com/signup](https://www.goatcounter.com/signup). The code you pick becomes `<code>.goatcounter.com`. Under *Settings*, set the time zone to *Asia/Jakarta*, so "today" matches yours. GoatCounter's free plan is for non-commercial use; a business site needs one of its paid plans (or you can self-host GoatCounter).
+2. Put the code in `public/assets/js/config.js` → `analytics.goatcounter` (e.g. `"geosai"`) and commit. Counting starts once that change is deployed; while the value is empty, nothing is sent.
+3. In GoatCounter: *Settings → API → New API key*, with only **Read statistics** ticked. Paste it into the Visitors panel. It is stored in this browser only and sent only to `<code>.goatcounter.com`. *Forget API key* or *Sign out* removes it.
+
+*Full stats ↗* opens GoatCounter's own dashboard, which also shows browsers, screen sizes, countries, and older periods.
+
 ## One-time setup
 
 1. **Pages:** Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
@@ -77,3 +95,4 @@ Saving from a local preview commits to the real repository, the same as on the l
 - [ ] When Telegram/Discord are ready: set their links in `config.js` and remove them from `comingSoon`
 - [ ] Replace the example datasets with real ones through the admin (especially feature counts)
 - [ ] Check redistribution rights for each source
+- [ ] Set up visitor stats (see *Visitor stats*)

@@ -181,7 +181,8 @@
       }
       state.branch = CMS.branch || repo.default_branch;
       $("who").innerHTML = (me.avatar_url ? '<img src="' + esc(me.avatar_url) + '" alt="">' : "") + esc(me.login);
-      return loadList();
+      // After the list is on screen, so the chart can measure its width.
+      return loadList().then(function () { window.Visitors.load(); });
     }).catch(function (err) {
       if (err.status === 401 || err.status === 404) {
         clearToken();
@@ -617,6 +618,7 @@
   });
   $("btn-logout").addEventListener("click", function () {
     clearToken();
+    window.Visitors.signOut();
     state.items = [];
     state.links = {};
     $("rows").innerHTML = "";

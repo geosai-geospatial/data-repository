@@ -12,6 +12,9 @@
   // Coverage images live next to datasets.json, uploaded by the admin. Only
   // this exact shape is accepted, so the value is always a same-site image path.
   var IMAGE_RE = /^data\/images\/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:png|jpe?g|webp)$/;
+  // Public download link of a free dataset. Must be https so the button can
+  // never become a javascript: or plain-http link.
+  var DOWNLOAD_RE = /^https:\/\/[^\s"'<>]+$/;
 
   function fail(msg) { throw new Error(msg); }
 
@@ -95,6 +98,15 @@
       price: str(input.price, "price", { max: 100 }) || "Hubungi kami",
       published: input.published !== false,
     };
+    // Free datasets are downloaded straight from the public link, without
+    // contacting us. The two keys are only written for free datasets.
+    if (input.free === true) {
+      var download = str(input.download, "download", { required: true, max: 500 });
+      if (!DOWNLOAD_RE.test(download)) fail("download must be an https:// link");
+      out.free = true;
+      out.download = download;
+      out.price = "Gratis";
+    }
     if (input.updated) out.updated = str(input.updated, "updated", { max: 10 });
     return out;
   }

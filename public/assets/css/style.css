@@ -196,6 +196,7 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
   border-top: 1px solid var(--border); padding: 12px 20px; font-size: 14px; background: #fbfcfd;
 }
 .card-foot .price { font-weight: 600; }
+.card-foot .price.free { color: #15803d; }
 .card-foot .price small { display: block; font-size: 11px; font-weight: 500; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.04em; }
 .card-foot .more { color: var(--brand); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 .card:hover .more svg { transform: translateX(2px); }
@@ -218,12 +219,15 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .thumb.t-pertambangan { background: #f6efe2; color: #8a5a00; }
 .thumb.t-perkebunan { background: #eef5e4; color: #4b6b12; }
 .thumb.t-administrasi { background: #e9eef8; color: #2f4f8a; }
+.thumb.t-transportasi { background: #f1eef7; color: #5b3f8a; }
+.thumb .badge-free { position: absolute; top: 12px; right: 12px; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
   background: var(--bg); color: var(--muted); border: 1px solid var(--border); line-height: 1.5;
 }
 .badge.cat { background: var(--brand-soft); color: var(--brand); border-color: transparent; }
+.badge.free { background: #15803d; color: #fff; border-color: transparent; letter-spacing: 0.02em; }
 .badge.solid { background: rgba(255, 255, 255, 0.95); color: var(--text); border-color: transparent; box-shadow: var(--shadow); }
 
 .empty { text-align: center; color: var(--muted); padding: 48px 16px; grid-column: 1 / -1; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); }
@@ -307,6 +311,9 @@ main > .container:last-child, main.page { padding-bottom: 64px; }
 .buy .checklist li { font-size: 14px; color: var(--muted); }
 .steps { padding-left: 20px; margin: 0; font-size: 14px; color: var(--muted); }
 .steps li { margin-bottom: 6px; }
+.free-panel .price-big { color: #15803d; }
+.btn-download { margin-top: 14px; }
+.free-panel .checklist + .email-alt { margin-top: 14px; }
 .guarantee { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; padding: 12px; border-radius: 8px; background: var(--brand-soft); color: var(--brand-dark); font-size: 13px; line-height: 1.5; }
 .guarantee svg { margin-top: 1px; }
 

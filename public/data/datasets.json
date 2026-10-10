@@ -1,5 +1,39 @@
 [
   {
+    "id": "jaringan-jalan-rbi-250k",
+    "title": "Jaringan Jalan Indonesia (RBI Skala 1:250.000)",
+    "category": "Transportasi",
+    "summary": "Garis jaringan jalan seluruh Indonesia dari Peta Rupabumi Indonesia (RBI) skala 1:250.000. Gratis, langsung unduh tanpa menghubungi admin.",
+    "description": [
+      "Jaringan jalan dari Peta Rupabumi Indonesia (RBI) skala 1:250.000 terbitan BAKOSURTANAL (kini Badan Informasi Geospasial), disajikan sebagai data garis untuk seluruh Indonesia.",
+      "Skala 1:250.000 cocok untuk analisis tingkat nasional, provinsi, dan kabupaten, misalnya aksesibilitas wilayah, jarak ke jalan sebagai faktor pemicu deforestasi, serta peta konteks untuk uji tuntas dan proyek karbon. Untuk analisis tingkat tapak, gunakan data skala lebih besar.",
+      "Dataset ini gratis: klik Unduh gratis untuk membuka folder unduhan. Mohon cantumkan sumber data saat digunakan."
+    ],
+    "coverage": "Seluruh Indonesia",
+    "bbox": [
+      95,
+      -11,
+      141,
+      6
+    ],
+    "image": "",
+    "source": "Peta Rupabumi Indonesia (RBI) skala 1:250.000, BAKOSURTANAL / Badan Informasi Geospasial",
+    "year": "",
+    "format": [
+      "SHP"
+    ],
+    "crs": "",
+    "geometry": "Line",
+    "features": 0,
+    "size": "",
+    "attributes": [],
+    "price": "Gratis",
+    "published": true,
+    "free": true,
+    "download": "https://drive.google.com/drive/folders/1e575mdMFWyBomTQamlejKrtCFX7ih95H?usp=drive_link",
+    "updated": "2026-10-10"
+  },
+  {
     "id": "pptpkh-tora-revisi-iv-2026",
     "title": "Peta Indikatif PPTPKH dan Sumber TORA Revisi IV (2026)",
     "category": "Kehutanan",

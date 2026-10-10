@@ -17,7 +17,7 @@
       141,
       6
     ],
-    "image": "",
+    "image": "data/images/batas-provinsi-indonesia-250k.png",
     "source": "Peta Dasar BAKOSURTANAL skala 1:250.000",
     "year": "",
     "format": [
@@ -51,8 +51,6 @@
     ],
     "price": "Gratis",
     "published": true,
-    "free": true,
-    "download": "https://drive.google.com/drive/folders/1e575mdMFWyBomTQamlejKrtCFX7ih95H?usp=drive_link",
     "updated": "2026-10-10"
   },
   {

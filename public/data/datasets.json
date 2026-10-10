@@ -352,5 +352,83 @@
     "price": "Hubungi kami",
     "published": true,
     "updated": "2026-10-01"
+  },
+  {
+    "id": "pptpkh-tora-revisi-iv-2026",
+    "title": "Peta Indikatif PPTPKH dan Sumber TORA Revisi IV (2026)",
+    "category": "Kehutanan",
+    "summary": "Poligon Peta Indikatif Penyelesaian Penguasaan Tanah dalam rangka Penataan Kawasan Hutan (PPTPKH), sumber Tanah Obyek Reforma Agraria (TORA), dan realisasinya, sesuai SK Menteri Kehutanan No. 2216 Tahun 2026.",
+    "description": [
+      "Lampiran spasial Keputusan Menteri Kehutanan Nomor 2216 Tahun 2026 (20 April 2026) tentang Peta Indikatif PPTPKH dan Sumber TORA serta Peta Realisasi PPTPKH dan TORA Revisi IV, skala 1:250.000. Keputusan ini mencabut Revisi III (SK MenLHK No. 6132 Tahun 2024) dan menetapkan luas total ± 4.959.290 hektar.",
+      "Rincian luas menurut SK: pelepasan kawasan hutan untuk sumber TORA (SK Biru, 233 SK) ± 380.107 ha; realisasi penyediaan sumber TORA dari addendum PBPH, revisi RTRW, tata batas, pelepasan HPK tidak produktif, dan penegasan transmigrasi ± 1.051.682 ha; alokasi 20% kebun masyarakat ± 484.514 ha; pencadangan HPK tidak produktif ± 954.495 ha; telah diinventarisasi dan diverifikasi / proses penyediaan TORA ± 479.775 ha; indikatif HPK tidak produktif ± 188.616 ha; belum diinventarisasi dan diverifikasi ± 1.420.101 ha.",
+      "Setiap poligon memuat kriteria penguasaan tanah (lahan garapan pertanian, perkebunan dan tambak; permukiman dan fasilitas umum; permukiman transmigrasi; HPK tidak produktif; alokasi 20% kebun masyarakat; pencadangan sawah baru), status progres (Indikatif PPTPKH, Proses Penyediaan TORA, SK Biru, Realisasi, Alokasi 20% & Pencadangan HPK TP), serta provinsi dan kabupaten.",
+      "Berguna untuk uji tuntas (due diligence) lahan dan rantai pasok, analisis tumpang-tindih dengan konsesi kehutanan, perkebunan, dan tambang, serta penapisan risiko tenurial pada proyek karbon dan restorasi."
+    ],
+    "coverage": "37 provinsi (seluruh Indonesia kecuali DI Yogyakarta), 443 kabupaten/kota",
+    "bbox": [
+      95,
+      -11,
+      141,
+      6
+    ],
+    "source": "Lampiran Keputusan Menteri Kehutanan No. 2216 Tahun 2026 (Kementerian Kehutanan)",
+    "year": "2026",
+    "format": [
+      "SHP"
+    ],
+    "crs": "EPSG:4326 (WGS 84)",
+    "geometry": "Polygon",
+    "features": 6924,
+    "size": "",
+    "attributes": [
+      {
+        "name": "kriteria",
+        "type": "Text",
+        "description": "Kriteria penguasaan tanah (lahan garapan, permukiman, transmigrasi, HPK tidak produktif, alokasi 20%, sawah baru)"
+      },
+      {
+        "name": "progres",
+        "type": "Text",
+        "description": "Status: Indikatif PPTPKH, Indikatif PPTPKH HPK TP, Proses Penyediaan TORA, SK BIRU, Realisasi, Alokasi 20%&Pencad HPKTP"
+      },
+      {
+        "name": "luas",
+        "type": "Double",
+        "description": "Luas poligon (hektar)"
+      },
+      {
+        "name": "remark",
+        "type": "Text",
+        "description": "Keterangan (mis. Sawit_Konsinyering, poligon sesuai permohonan para pihak)"
+      },
+      {
+        "name": "kode_prov",
+        "type": "Integer",
+        "description": "Kode provinsi"
+      },
+      {
+        "name": "Province",
+        "type": "Text",
+        "description": "Provinsi"
+      },
+      {
+        "name": "Kabupaten",
+        "type": "Text",
+        "description": "Kabupaten / Kota"
+      },
+      {
+        "name": "SK",
+        "type": "Text",
+        "description": "Dasar hukum (SK Menteri Kehutanan Nomor 2216 Tahun 2026)"
+      },
+      {
+        "name": "Date",
+        "type": "Text",
+        "description": "Tanggal SK (20 April 2026)"
+      }
+    ],
+    "price": "Hubungi kami",
+    "published": true,
+    "updated": "2026-10-10"
   }
 ]

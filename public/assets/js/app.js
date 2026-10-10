@@ -57,9 +57,10 @@
         '<div class="container">' +
         '<a class="logo" href="index.html"><span class="logo-mark">' + ICONS.logo + '</span><span class="name">' + esc(SITE.name) + "</span></a>" +
         '<nav class="nav" aria-label="Navigasi utama">' +
-        '<a href="index.html"' + (page === "home" || page === "dataset" ? ' class="active"' : "") + ">Katalog</a>" +
+        '<a href="services.html"' + (page === "services" ? ' class="active"' : "") + ">Layanan</a>" +
+        '<a href="index.html#katalog"' + (page === "home" || page === "dataset" ? ' class="active"' : "") + ">Data</a>" +
         '<a href="contact.html"' + (page === "contact" ? ' class="active"' : "") + ">Kontak</a>" +
-        (page === "admin" ? "" : '<a class="nav-cta" href="contact.html">Minta sampel</a>') +
+        (page === "admin" ? "" : '<a class="nav-cta" href="contact.html" data-service="">Konsultasi</a>') +
         "</nav></div>";
     }
     var footer = document.getElementById("site-footer");
@@ -67,12 +68,13 @@
       footer.innerHTML =
         '<div class="container"><div class="footer-grid">' +
         '<div><a class="logo" href="index.html"><span class="logo-mark">' + ICONS.logo + "</span>" + esc(SITE.name) + "</a>" +
-        "<p>" + esc(SITE.tagline) + " Untuk riset, perencanaan, dan uji tuntas.</p></div>" +
-        '<div><h4>Katalog</h4><ul><li><a href="index.html#katalog">Semua dataset</a></li><li><a href="index.html#katalog">Cari &amp; filter</a></li></ul></div>' +
+        "<p>" + esc(SITE.tagline) + "</p></div>" +
+        '<div><h4>Layanan</h4><ul><li><a href="services.html#uji-tuntas">Uji tuntas spasial</a></li><li><a href="services.html#penginderaan-jauh">Penginderaan jauh</a></li><li><a href="services.html#karbon">Proyek karbon</a></li><li><a href="services.html">Semua layanan</a></li></ul></div>' +
+        '<div><h4>Data</h4><ul><li><a href="index.html#katalog">Katalog dataset</a></li><li><a href="contact.html">Minta sampel</a></li></ul></div>' +
         '<div><h4>Bantuan</h4><ul><li><a href="contact.html">Kontak &amp; pemesanan</a></li><li><a href="contact.html#faq">Pertanyaan umum</a></li></ul></div>' +
         "</div>" +
         '<div class="footer-bottom"><span>&copy; ' + new Date().getFullYear() + " " + esc(SITE.name) + ".</span>" +
-        "<span>Data bersifat referensi dan bukan pengganti dokumen legal resmi.</span></div>" +
+        "<span>Data dan hasil analisis bersifat referensi, bukan pengganti dokumen legal resmi.</span></div>" +
         "</div>";
     }
   }
@@ -86,9 +88,28 @@
     return ["- Dataset: " + d.title, "- Kode: " + d.id, "- Tautan: " + url, ""];
   }
 
+  function greet(t) {
+    t.body = ["Halo GeoSAI,", ""].concat(t.body).concat(["", "Terima kasih."]).join("\n");
+    return t;
+  }
+
+  var WHO = ["- Nama:", "- Instansi/perusahaan:"];
+
+  // Enquiry about a service; an empty name is a general consultation.
+  function serviceTemplate(service) {
+    return greet({
+      subject: "Konsultasi layanan geospasial" + (service ? ": " + service : ""),
+      body: ["Saya ingin berkonsultasi tentang pekerjaan geospasial berikut:", ""]
+        .concat(service ? ["- Layanan: " + service] : [])
+        .concat(["- Pertanyaan yang ingin dijawab:", "- Lokasi / luas area (lampirkan SHP, KML, atau koordinat jika ada):", "- Tenggat waktu:", "- Hasil yang dibutuhkan (laporan / peta / data):"])
+        .concat(WHO),
+    });
+  }
+
   function mailTemplate(kind, d) {
+    if (kind === "service") return serviceTemplate("");
     var name = d ? d.title : "";
-    var who = ["- Nama:", "- Instansi/perusahaan:"];
+    var who = WHO;
     var t = {
       ask: {
         subject: "Pertanyaan data spasial" + (d ? ": " + name : ""),
@@ -113,13 +134,12 @@
       },
       invoice: {
         subject: "Permintaan penawaran resmi" + (d ? ": " + name : ""),
-        body: ["Kami membutuhkan penawaran resmi untuk pengadaan data spasial.", ""]
-          .concat(d ? dsLines(d) : ["- Dataset:", ""])
+        body: ["Kami membutuhkan penawaran resmi untuk pengadaan data atau layanan geospasial.", ""]
+          .concat(d ? dsLines(d) : ["- Dataset / layanan:", ""])
           .concat(["- Nama instansi/perusahaan:", "- Nama & jabatan penanggung jawab:", "- Alamat penagihan:", "- Dokumen yang dibutuhkan (penawaran / invoice / kuitansi):"]),
       },
     }[kind];
-    t.body = ["Halo GeoSAI Data,", ""].concat(t.body).concat(["", "Terima kasih."]).join("\n");
-    return t;
+    return greet(t);
   }
 
   function mailto(t) {
@@ -174,6 +194,14 @@
       } else {
         window.prompt("Salin alamat email:", text);
       }
+    });
+  }
+
+  // Service buttons link to contact.html without JS; with JS they open a
+  // pre-filled email naming the service (an empty value is a general enquiry).
+  function wireServiceButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll("[data-service]"), function (a) {
+      if (SITE.contacts.email) a.href = mailto(serviceTemplate(a.getAttribute("data-service")));
     });
   }
 
@@ -427,16 +455,17 @@
     var c = SITE.contacts, html = "";
     if (c.email) {
       var templates = [
+        { kind: "service", title: "Konsultasi layanan", text: "Uji tuntas, penginderaan jauh, proyek karbon, analisis, atau pemetaan." },
         { kind: "ask", title: "Tanya ketersediaan data", text: "Cari data yang belum ada di katalog, atau tanya detail dataset." },
         { kind: "sample", title: "Minta sampel gratis", text: "Lihat potongan data atau tabel atribut sebelum membeli." },
         { kind: "order", title: "Pesan dataset", text: "Dapatkan harga dan cara pembayaran untuk dataset pilihan Anda." },
-        { kind: "invoice", title: "Penawaran resmi / invoice", text: "Untuk pengadaan instansi atau perusahaan yang butuh dokumen." },
+        { kind: "invoice", title: "Penawaran resmi / invoice", text: "Untuk pengadaan data atau layanan oleh instansi dan perusahaan." },
       ];
       html +=
         '<section class="panel email-hero">' +
         '<div class="email-head"><div class="icon">' + ICONS.email + "</div><div>" +
         '<p class="kicker">Email</p><h2><a href="mailto:' + esc(c.email) + '">' + esc(c.email) + "</a> " + copyButton() + "</h2>" +
-        "<p>Satu alamat untuk bertanya, minta sampel, dan memesan. Pilih keperluan Anda; email terbuka dengan isi yang sudah disiapkan, tinggal lengkapi.</p>" +
+        "<p>Satu alamat untuk konsultasi layanan, bertanya, minta sampel, dan memesan data. Pilih keperluan Anda; email terbuka dengan isi yang sudah disiapkan, tinggal lengkapi.</p>" +
         "</div></div>" +
         '<div class="template-grid">' +
         templates.map(function (k) {
@@ -493,6 +522,7 @@
     var page = document.body.getAttribute("data-page");
     renderLayout(page);
     initCopy();
+    wireServiceButtons();
     if (page === "home") {
       loadDatasets()
         .then(function (list) { DATASETS = list; renderHome(); })

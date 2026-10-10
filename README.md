@@ -1,10 +1,17 @@
-# GeoSAI Data — katalog data spasial
+# GeoSAI — geospatial services and data
 
-Catalog site for selling Indonesian geospatial datasets, hosted free on GitHub Pages, with a small admin CMS at `/admin.html`.
+Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon projects, spatial analysis, mapping, data processing) and its catalog of Indonesian geospatial datasets, hosted free on GitHub Pages, with a small admin CMS at `/admin.html`.
+
+## Pages
+
+- `index.html`: home. Company intro, a services overview linking to `services.html`, then the dataset catalog (`#katalog`).
+- `services.html`: the services, how an engagement runs, and a services FAQ. The content is plain HTML; edit it directly. Every button with a `data-service="…"` attribute opens a pre-filled consultation email naming that service (an empty value is a general consultation); without JavaScript it falls back to `contact.html`.
+- `dataset.html?id=…`: dataset detail.
+- `contact.html`: email templates (consultation, data questions, samples, orders, invoices) and the FAQ.
 
 Live site: https://geosai-geospatial.github.io/data-repository/
 
-## How it works
+## How the data catalog works
 
 There is no server. The catalog is one file in this repository, `public/data/datasets.json`:
 

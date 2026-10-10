@@ -1,8 +1,8 @@
 {
-  "name": "geosai-data",
+  "name": "geosai",
   "version": "3.0.0",
   "private": true,
-  "description": "Static geospatial dataset catalog on GitHub Pages with a token-based admin CMS",
+  "description": "Geospatial services and dataset catalog on GitHub Pages with a token-based admin CMS",
   "scripts": {
     "start": "python3 -m http.server 8000 --directory public",
     "test": "node --test",

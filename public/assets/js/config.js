@@ -20,4 +20,15 @@ window.SITE = {
     goatcounter: "geosai",
   },
   responseTime: "Biasanya membalas dalam 1×24 jam (hari kerja, WIB).",
+  // Crypto addresses for the "Dukung GeoSAI" banner above the footer. One
+  // entry per address; list every network that address accepts. Leave the
+  // list empty ([]) to hide the banner. test/support.test.js checks each
+  // address's checksum, so a typo here fails `npm test`.
+  support: {
+    crypto: [
+      { networks: ["Ethereum", "BNB Smart Chain", "Arbitrum One"], address: "0x5587413DCe89D217fb05F7F04afcE619E3b7b100" },
+      { networks: ["Bitcoin (native SegWit)"], address: "bc1q9kkt27u2nhk9uh37d0gylvmcjzdcykj0yseaz5" },
+      { networks: ["Solana"], address: "EU4NBmqUuiTtJoaSS7EqCraiRwLoz1F2XmNhk94kn6HT" },
+    ],
+  },
 };

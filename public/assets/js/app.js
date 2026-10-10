@@ -18,6 +18,8 @@
     clock: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
     shield: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
     download: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg>',
+    heart: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>',
+    chevron: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
     email: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>',
   };
 
@@ -74,12 +76,45 @@
         "<p>" + esc(SITE.tagline) + "</p></div>" +
         '<div><h4>Layanan</h4><ul><li><a href="services.html#uji-tuntas">Uji tuntas spasial</a></li><li><a href="services.html#penginderaan-jauh">Penginderaan jauh</a></li><li><a href="services.html#karbon">Proyek karbon</a></li><li><a href="services.html">Semua layanan</a></li></ul></div>' +
         '<div><h4>Data</h4><ul><li><a href="index.html#katalog">Katalog dataset</a></li><li><a href="buat-peta.html">Buat peta gratis</a></li><li><a href="konversi-data.html">Konversi data gratis</a></li><li><a href="lihat-geotiff.html">Lihat GeoTIFF gratis</a></li><li><a href="contact.html">Minta sampel</a></li></ul></div>' +
-        '<div><h4>Bantuan</h4><ul><li><a href="contact.html">Kontak &amp; pemesanan</a></li><li><a href="contact.html#faq">Pertanyaan umum</a></li></ul></div>' +
+        '<div><h4>Bantuan</h4><ul><li><a href="contact.html">Kontak &amp; pemesanan</a></li><li><a href="contact.html#faq">Pertanyaan umum</a></li>' + (page === "admin" ? "" : '<li><a href="#dukung">Dukung GeoSAI</a></li>') + '</ul></div>' +
         "</div>" +
         '<div class="footer-bottom"><span>&copy; ' + new Date().getFullYear() + " " + esc(SITE.name) + ".</span>" +
         "<span>Data dan hasil analisis bersifat referensi, bukan pengganti dokumen legal resmi.</span></div>" +
         "</div>";
+      if (page !== "admin") renderSupport(footer);
     }
+  }
+
+  // ---------- Support banner ----------
+  // A band above the footer asking visitors who find the free tools useful to
+  // support the site with crypto. Collapsed by default so it never gets in the
+  // way; the addresses come from SITE.support.crypto in config.js.
+  function renderSupport(footer) {
+    var list = ((SITE.support || {}).crypto || []).filter(function (c) { return c.address; });
+    if (!list.length) return;
+    var rows = list.map(function (c) {
+      return '<li class="support-row">' +
+        '<div class="support-nets">' + (c.networks || []).map(function (n) { return '<span class="badge">' + esc(n) + "</span>"; }).join("") + "</div>" +
+        '<div class="support-addr"><code>' + esc(c.address) + "</code>" +
+        '<button type="button" class="copy-btn" data-copy="' + esc(c.address) + '" data-copy-what="alamat ' + esc((c.networks || [])[0] || "") + '">Salin</button></div>' +
+        "</li>";
+    }).join("");
+    footer.insertAdjacentHTML("beforebegin",
+      '<section class="support-band" id="dukung" aria-labelledby="dukung-title"><div class="container">' +
+      '<details class="support">' +
+      '<summary><span class="support-icon">' + ICONS.heart + "</span>" +
+      '<span class="support-text"><strong id="dukung-title">Dukung GeoSAI</strong>' +
+      "<span>Alat buat peta, konversi data, dan penampil GeoTIFF di situs ini gratis dan tanpa iklan. Jika bermanfaat, Anda bisa ikut menanggung biayanya lewat donasi kripto.</span></span>" +
+      '<span class="support-toggle">Donasi kripto' + ICONS.chevron + "</span></summary>" +
+      '<div class="support-body">' +
+      '<ul class="support-list">' + rows + "</ul>" +
+      '<p class="support-note">Kirim hanya lewat jaringan yang tercantum pada alamatnya; aset yang dikirim lewat jaringan lain bisa hilang. ' +
+      "Periksa beberapa karakter awal dan akhir alamat setelah ditempel. Donasi bersifat sukarela dan tidak dapat dikembalikan. Terima kasih!</p>" +
+      "</div></details></div></section>");
+    var details = document.querySelector("#dukung details");
+    var openFromHash = function () { if (location.hash === "#dukung") details.open = true; };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
   }
 
   // ---------- Email ----------
@@ -187,15 +222,16 @@
       var b = e.target.closest && e.target.closest("[data-copy]");
       if (!b) return;
       var text = b.getAttribute("data-copy");
+      var ask = "Salin " + (b.getAttribute("data-copy-what") || "alamat email") + ":";
       var done = function () {
         var label = b.textContent;
         b.textContent = "Tersalin ✓";
         setTimeout(function () { b.textContent = label; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(done, function () { window.prompt("Salin alamat email:", text); });
+        navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });
       } else {
-        window.prompt("Salin alamat email:", text);
+        window.prompt(ask, text);
       }
     });
   }

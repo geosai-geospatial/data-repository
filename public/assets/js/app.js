@@ -64,6 +64,7 @@
         '<a href="buat-peta.html"' + (page === "mapmaker" ? ' class="active"' : "") + ">Buat Peta</a>" +
         '<a href="konversi-data.html"' + (page === "converter" ? ' class="active"' : "") + ">Konversi</a>" +
         '<a href="lihat-geotiff.html"' + (page === "viewer" ? ' class="active"' : "") + ">GeoTIFF</a>" +
+        '<a href="ekstrak-pdf.html"' + (page === "pdfmap" ? ' class="active"' : "") + ">PDF Peta</a>" +
         '<a href="contact.html"' + (page === "contact" ? ' class="active"' : "") + ">Kontak</a>" +
         (page === "admin" ? "" : '<a class="nav-cta" href="contact.html" data-service="">Konsultasi</a>') +
         "</nav></div>";
@@ -75,7 +76,7 @@
         '<div><a class="logo" href="index.html"><span class="logo-mark">' + ICONS.logo + "</span>" + esc(SITE.name) + "</a>" +
         "<p>" + esc(SITE.tagline) + "</p></div>" +
         '<div><h4>Layanan</h4><ul><li><a href="services.html#uji-tuntas">Uji tuntas spasial</a></li><li><a href="services.html#penginderaan-jauh">Penginderaan jauh</a></li><li><a href="services.html#karbon">Proyek karbon</a></li><li><a href="services.html">Semua layanan</a></li></ul></div>' +
-        '<div><h4>Data</h4><ul><li><a href="index.html#katalog">Katalog dataset</a></li><li><a href="buat-peta.html">Buat peta gratis</a></li><li><a href="konversi-data.html">Konversi data gratis</a></li><li><a href="lihat-geotiff.html">Lihat GeoTIFF gratis</a></li><li><a href="contact.html">Minta sampel</a></li></ul></div>' +
+        '<div><h4>Data</h4><ul><li><a href="index.html#katalog">Katalog dataset</a></li><li><a href="buat-peta.html">Buat peta gratis</a></li><li><a href="konversi-data.html">Konversi data gratis</a></li><li><a href="lihat-geotiff.html">Lihat GeoTIFF gratis</a></li><li><a href="ekstrak-pdf.html">Ekstrak peta PDF gratis</a></li><li><a href="contact.html">Minta sampel</a></li></ul></div>' +
         '<div><h4>Bantuan</h4><ul><li><a href="contact.html">Kontak &amp; pemesanan</a></li><li><a href="contact.html#faq">Pertanyaan umum</a></li>' + (page === "admin" ? "" : '<li><a href="#dukung">Dukung GeoSAI</a></li>') + '</ul></div>' +
         "</div>" +
         '<div class="footer-bottom"><span>&copy; ' + new Date().getFullYear() + " " + esc(SITE.name) + ".</span>" +
@@ -104,7 +105,7 @@
       '<details class="support">' +
       '<summary><span class="support-icon">' + ICONS.heart + "</span>" +
       '<span class="support-text"><strong id="dukung-title">Dukung GeoSAI</strong>' +
-      "<span>Alat buat peta, konversi data, dan penampil GeoTIFF di situs ini gratis dan tanpa iklan. Jika bermanfaat, Anda bisa ikut menanggung biayanya lewat donasi kripto.</span></span>" +
+      "<span>Alat buat peta, konversi data, penampil GeoTIFF, dan ekstraktor peta PDF di situs ini gratis dan tanpa iklan. Jika bermanfaat, Anda bisa ikut menanggung biayanya lewat donasi kripto.</span></span>" +
       '<span class="support-toggle">Donasi kripto' + ICONS.chevron + "</span></summary>" +
       '<div class="support-body">' +
       '<ul class="support-list">' + rows + "</ul>" +

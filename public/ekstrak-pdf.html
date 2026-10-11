@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The page may only talk to this site (pdf.js, sample data) and the visit counter, so a picked file cannot be sent anywhere. Basemap tiles are images, not connections. -->
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' https://geosai.goatcounter.com; form-action 'none'; base-uri 'self'">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f5e4b'/%3E%3Cpath d='M7 10v14l6-3 6 3 6-3V7l-6 3-6-3z' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<title>Ekstrak Data dari Peta PDF, Gratis — GeoSAI</title>
+<meta name="theme-color" content="#0f5e4b">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ekstrak data spasial dari peta PDF, gratis — GeoSAI">
+<meta property="og:description" content="Ubah peta PDF (peta risiko, RTRW, tutupan lahan) menjadi data GIS: beri koordinat dari grid peta, lalu ambil garis, poligon per warna legenda, label, dan GeoTIFF. File tidak diunggah.">
+<meta name="description" content="Ekstraktor peta PDF gratis di browser: georeferensi dari grid peta atau GeoPDF, ambil garis dan poligon vektor, ubah warna legenda (mis. kelas risiko) menjadi poligon, dan simpan peta sebagai GeoTIFF. File tidak diunggah dan tidak disimpan oleh GeoSAI.">
+<script data-goatcounter="https://geosai.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</head>
+<body data-page="pdfmap">
+<a class="skip-link" href="#ekstrak">Langsung ke konten</a>
+<header class="site-header" id="site-header"></header>
+<main>
+  <div class="container">
+    <div class="detail-head page-head">
+      <span class="kicker">Alat gratis</span>
+      <h1>Ekstrak data spasial dari peta PDF</h1>
+      <p class="lead">Peta yang hanya tersedia sebagai PDF (peta risiko bencana, RTRW, tutupan lahan, lampiran izin) bisa dijadikan data GIS lagi: beri koordinat dari grid peta, lalu ambil garis dan poligonnya, ubah warna legenda menjadi poligon per kelas, dan simpan petanya sebagai GeoTIFF.</p>
+    </div>
+
+    <aside class="privacy-note" aria-labelledby="privacy-short">
+      <span class="privacy-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>
+      <div>
+        <strong id="privacy-short">GeoSAI tidak menyimpan data Anda.</strong>
+        PDF dibaca dan diolah oleh browser di perangkat Anda sendiri: tidak diunggah ke server GeoSAI atau pihak lain, dan hilang dari memori saat halaman ditutup. <a href="#privasi">Baca pernyataan privasi data</a>
+      </div>
+    </aside>
+
+    <div class="maker pdfx" id="ekstrak">
+      <section class="panel maker-controls">
+        <h2>1. Pilih peta PDF</h2>
+        <label class="dropzone" id="px-drop">
+          <input type="file" id="px-file" accept=".pdf,application/pdf">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>
+          <strong>Seret file ke sini atau klik untuk memilih</strong>
+          <span>Peta dalam PDF, termasuk GeoPDF</span>
+        </label>
+        <p class="small">Belum punya file? <button type="button" class="link-btn" id="px-sample">Coba dengan peta contoh</button></p>
+        <label class="px-page" id="px-page-wrap" hidden>Halaman <select id="px-page"></select></label>
+        <p class="mm-status" id="px-status" role="status" hidden></p>
+
+        <div id="px-steps" hidden>
+          <h2>2. Beri koordinat</h2>
+          <p class="px-note" id="px-geo-note"></p>
+          <div class="maker-form">
+            <label>Sistem koordinat peta
+              <select id="px-crs"></select>
+              <span class="hint" id="px-crs-hint">Lihat keterangan grid di peta, mis. <em>UTM Zona 50 S</em>. Pilih bujur/lintang bila hanya ada grid derajat.</span>
+            </label>
+            <label id="px-epsg-wrap" hidden>Kode EPSG <input id="px-epsg" inputmode="numeric" autocomplete="off" placeholder="mis. 23835 (DGN95 / TM-3 50.1)"></label>
+            <label id="px-entry-wrap">Koordinat titik diketik sebagai
+              <select id="px-entry">
+                <option value="map">X/Y peta (meter)</option>
+                <option value="lonlat">Bujur/lintang (derajat)</option>
+              </select>
+            </label>
+          </div>
+          <p class="hint">Klik peta di titik yang koordinatnya tertera, sebaiknya persilangan grid (<b>+</b>) yang berlabel, lalu ketik koordinatnya. Dua titik yang berjauhan sudah cukup; titik ketiga dan seterusnya menambah ketelitian. Seret penanda untuk menggesernya.</p>
+          <label class="gv-check px-check" id="px-snap-wrap"><input type="checkbox" id="px-snap" checked> <span>Tempel ke persilangan grid (<span id="px-node-count">0</span> ditemukan)</span></label>
+          <ol class="px-points" id="px-points"></ol>
+          <div class="px-grid" id="px-grid" hidden>
+            <label>Jarak grid <input id="px-interval" inputmode="decimal" autocomplete="off"></label>
+            <button type="button" class="btn btn-email" id="px-complete">Lengkapi dari grid</button>
+          </div>
+          <p class="px-fit" id="px-fit" aria-live="polite"></p>
+          <p class="small">Area peta (kotak putus-putus) dipakai untuk memotong hasil. <button type="button" class="link-btn" id="px-frame-btn">Gambar ulang area peta</button></p>
+
+          <h2>3. Pilih yang diekstrak</h2>
+          <details class="px-sec" id="px-sec-vec" open>
+            <summary>Garis &amp; poligon vektor <span class="count" id="px-vec-count"></span></summary>
+            <p class="hint">Objek digambar sama (warna, tebal, putus-putus) dikelompokkan menjadi satu lapisan. Arahkan kursor ke lapisan untuk menyorotnya di peta; beri nama yang dipakai di atribut <code>lapisan</code>.</p>
+            <p class="small px-bulk"><button type="button" class="link-btn" id="px-all">Pilih semua</button> · <button type="button" class="link-btn" id="px-none">Kosongkan</button></p>
+            <ul class="px-groups" id="px-groups"></ul>
+            <label class="gv-check px-check"><input type="checkbox" id="px-labels"> <span>Teks sebagai titik berlabel (<span id="px-label-count">0</span>)</span></label>
+          </details>
+          <details class="px-sec" id="px-sec-cls" open>
+            <summary>Warna legenda → poligon</summary>
+            <p class="hint">Untuk area yang diwarnai di gambar peta (kelas risiko, tutupan lahan). Buat satu kelas per warna legenda, lalu <em>Ambil warna</em> dengan mengklik kotak legenda atau area di peta, atau <em>Ambil gradasi</em> (klik awal dan akhir batang legenda bergradasi).</p>
+            <ul class="px-classes" id="px-classes"></ul>
+            <button type="button" class="btn btn-email px-add" id="px-add-class">+ Tambah kelas</button>
+            <div class="maker-form px-cls-opts">
+              <label>Toleransi warna <span class="hint" id="px-tol-val"></span>
+                <input type="range" id="px-tol" min="3" max="40" value="12">
+              </label>
+              <label>Abaikan garis setipis
+                <select id="px-thin">
+                  <option value="0">Tidak</option>
+                  <option value="0.5">0,5 mm di kertas</option>
+                  <option value="0.8" selected>0,8 mm di kertas</option>
+                  <option value="1.2">1,2 mm di kertas</option>
+                  <option value="2">2 mm di kertas</option>
+                </select>
+                <span class="hint">Jalan atau batas yang warnanya mirip kelas tidak ikut menjadi poligon.</span>
+              </label>
+              <label>Buang area lebih kecil dari
+                <select id="px-min">
+                  <option value="0">Tidak</option>
+                  <option value="0.25">0,25 mm² di kertas</option>
+                  <option value="1" selected>1 mm² di kertas</option>
+                  <option value="4">4 mm² di kertas</option>
+                </select>
+                <span class="hint" id="px-min-hint"></span>
+              </label>
+              <label class="gv-check"><input type="checkbox" id="px-highlight" checked> Sorot hasil di peta</label>
+            </div>
+          </details>
+          <details class="px-sec" id="px-sec-ras">
+            <summary>Gambar peta (GeoTIFF)</summary>
+            <label class="gv-check px-check"><input type="checkbox" id="px-raster"> <span>Simpan area peta sebagai GeoTIFF berkoordinat, dalam sistem koordinat peta</span></label>
+          </details>
+          <div class="maker-form px-out">
+            <label>Resolusi gambar
+              <select id="px-dpi"></select>
+              <span class="hint" id="px-dpi-hint"></span>
+            </label>
+            <label>Format vektor
+              <select id="px-format">
+                <option value="geojson">GeoJSON</option>
+                <option value="shp">Shapefile (.zip)</option>
+                <option value="kml">KML</option>
+              </select>
+            </label>
+          </div>
+          <div class="maker-actions"><button type="button" class="btn btn-primary" id="px-run">Ekstrak data</button></div>
+        </div>
+      </section>
+
+      <section class="panel maker-preview">
+        <div class="px-tabs" role="tablist" aria-label="Tampilan">
+          <button type="button" role="tab" class="px-tab" id="px-tab-pdf" aria-selected="true" aria-controls="px-view">Peta PDF</button>
+          <button type="button" role="tab" class="px-tab" id="px-tab-map" aria-selected="false" aria-controls="px-map" disabled>Periksa di peta dunia</button>
+        </div>
+        <div class="gv-map-wrap">
+          <div id="px-view" class="gv-map px-view" aria-label="Halaman PDF"></div>
+          <div id="px-map" class="gv-map" aria-label="Hasil di atas peta dasar" hidden></div>
+          <p class="gv-loading" id="px-loading" role="status" hidden>Memuat detail…</p>
+          <div class="px-modebar" id="px-mode" role="status" hidden><span id="px-mode-text"></span> <button type="button" class="link-btn" id="px-mode-done">Selesai</button></div>
+          <p class="maker-placeholder" id="px-placeholder">Pilih file PDF untuk menampilkannya di sini.</p>
+        </div>
+        <div class="px-map-opts" id="px-map-opts" hidden>
+          <label>Transparansi peta PDF <input type="range" id="px-opacity" min="0" max="100" value="70"></label>
+          <label>Peta dasar
+            <select id="px-basemap">
+              <option value="osm">OpenStreetMap</option>
+              <option value="imagery">Citra satelit (Esri)</option>
+              <option value="none">Tanpa peta dasar</option>
+            </select>
+          </label>
+        </div>
+        <div id="px-results" class="cv-result" hidden>
+          <p><strong>Hasil siap diunduh</strong></p>
+          <ul class="px-downloads" id="px-downloads"></ul>
+        </div>
+        <p class="small cv-clear" id="px-clear-wrap" hidden>Selesai? <button type="button" class="link-btn" id="px-clear">Hapus data dari memori browser</button></p>
+      </section>
+    </div>
+
+    <section class="section-gap">
+      <div class="section-head">
+        <h2>Cara kerjanya</h2>
+        <p>PDF menyimpan gambar peta dalam koordinat halaman (milimeter di kertas), bukan koordinat bumi. Peta dicetak dalam satu proyeksi, sehingga hubungan keduanya cukup ditentukan oleh beberapa titik yang koordinatnya diketahui.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="format-table">
+          <thead><tr><th>Langkah</th><th>Yang terjadi</th><th>Tips</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Georeferensi</strong></td><td>GeoPDF (ISO 32000 atau OGC) langsung terbaca koordinatnya. PDF biasa: dari titik kontrol yang Anda ketik dihitung transformasi afin halaman → koordinat peta, lalu persilangan grid lain ditambahkan otomatis dan galatnya (RMSE) ditampilkan.</td><td>Pilih sistem koordinat yang sama dengan grid yang dibaca. Ketik koordinat UTM dari label grid; RMSE di bawah ~1 mm di kertas berarti titiknya cocok.</td></tr>
+            <tr><td><strong>Vektor</strong></td><td>Garis dan area yang disimpan sebagai vektor di PDF diambil persis, dikelompokkan menurut gaya gambarnya.</td><td>Peta dari ArcGIS/QGIS biasanya menyimpan batas, jalan, dan sungai sebagai vektor. Teks yang diubah menjadi kurva juga muncul sebagai lapisan isian hitam.</td></tr>
+            <tr><td><strong>Warna legenda</strong></td><td>Gambar peta dirender di browser, tiap piksel dicocokkan ke warna kelas (jarak warna CIE Lab), garis tipis dan bintik kecil dibuang, lalu batasnya ditelusuri menjadi poligon.</td><td>Ambil warna dari kotak legenda dan dari area di peta (warna di peta sering tercampur bayangan relief). Naikkan toleransi bila area berlubang, turunkan bila area lain ikut.</td></tr>
+            <tr><td><strong>GeoTIFF</strong></td><td>Area peta dirender pada resolusi pilihan dan disimpan dengan koordinat dalam sistem koordinat peta, tanpa diproyeksikan ulang.</td><td>Pakai resolusi gambar di PDF (ditampilkan bila terdeteksi); resolusi lebih tinggi tidak menambah detail.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section-gap split">
+      <div class="panel privacy-statement" id="privasi">
+        <h2>Pernyataan privasi data</h2>
+        <p><strong>GeoSAI tidak menyimpan PDF yang Anda buka.</strong> Kami membangun alat ini sehingga file Anda memang tidak pernah sampai ke kami:</p>
+        <ul class="checklist">
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><div><strong>Tidak diunggah.</strong><span>PDF dibaca (dengan pdf.js), dirender, dan diolah oleh browser di perangkat Anda. Isinya tidak dikirim ke server GeoSAI maupun pihak ketiga; situs ini tidak punya server pengolah data.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><div><strong>Tidak disimpan.</strong><span>Data hanya ada di memori tab ini dan hilang saat Anda menekan <em>Hapus data dari memori browser</em>, memuat ulang, atau menutup halaman.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><div><strong>Peta dasar dari pihak ketiga.</strong><span>Di tab <em>Periksa di peta dunia</em>, ubin peta dasar dimuat dari OpenStreetMap atau Esri. Server mereka bisa melihat bagian bumi yang sedang ditampilkan, tetapi tidak menerima file Anda. Pilih <em>Tanpa peta dasar</em> bila lokasi pun ingin dirahasiakan.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><div><strong>Hanya statistik anonim.</strong><span>Kami menghitung kunjungan halaman dan berapa kali alat ini dipakai dengan GoatCounter, tanpa cookie dan tanpa data pribadi. Nama file, isi file, dan lokasinya tidak pernah dicatat.</span></div></li>
+          <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><div><strong>Bisa Anda periksa sendiri.</strong><span>Halaman ini memasang aturan keamanan browser (Content Security Policy) yang hanya mengizinkan koneksi data ke situs ini dan penghitung statistik di atas.</span></div></li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h2>PDF yang bisa diolah</h2>
+        <ul class="limit-list">
+          <li><span>Georeferensi otomatis</span><strong>GeoPDF ISO 32000, OGC</strong></li>
+          <li><span>Georeferensi manual</span><strong>Grid UTM, bujur/lintang, TM-3</strong></li>
+          <li><span>Hasil vektor</span><strong>GeoJSON, Shapefile, KML (WGS 84)</strong></li>
+          <li><span>Hasil gambar</span><strong>GeoTIFF RGB dan kelas</strong></li>
+        </ul>
+        <p>Sistem koordinat yang didukung: WGS 84 bujur/lintang, Web Mercator, UTM (WGS 84 atau DGN95), dan DGN95 Indonesia TM-3. Hasil vektor selalu dalam WGS 84; GeoTIFF dalam sistem koordinat peta.</p>
+        <p><strong>Ketelitian mengikuti peta aslinya.</strong> Peta 1 : 200.000 yang digambar dengan ketelitian 0,5 mm berarti ±100 m di lapangan, berapa pun resolusi yang dipilih. Hasil ekstraksi sebaiknya dipakai sebagai referensi, bukan pengganti data resmi dari penerbit peta.</p>
+        <p class="small">Belum didukung: proyeksi lain (Lambert, Albers, dsb.), PDF yang dikunci kata sandi, dan peta hasil pindai yang miring atau melengkung (perlu georeferensi polinomial di QGIS).</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="container">
+    <div class="cta-band">
+      <div>
+        <h2>Butuh data dari banyak peta PDF?</h2>
+        <p>Kami mendigitasi dan memvalidasi peta lampiran (RTRW, kajian risiko, izin konsesi) menjadi data GIS yang rapi, lengkap dengan atribut dan pemeriksaan topologi.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-hero btn-light" href="contact.html" data-service="Pengolahan &amp; pembersihan data">Konsultasi gratis</a>
+        <a class="btn btn-hero btn-ghost" href="services.html#pengolahan-data">Layanan pengolahan data</a>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="site-footer" id="site-footer"></footer>
+<script src="assets/vendor/leaflet/leaflet.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/staticmap.js"></script>
+<script src="assets/js/geotiff.js"></script>
+<script src="assets/js/geoconvert.js"></script>
+<script src="assets/js/pdfgeo.js"></script>
+<script src="assets/js/pdfextract.js"></script>
+</body>
+</html>

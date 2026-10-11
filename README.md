@@ -12,6 +12,7 @@ Website for GeoSAI's geospatial services (due diligence, remote sensing, carbon 
 - `konversi-data.html`: free public data converter (*Konversi* in the menu). See below.
 - `lihat-geotiff.html`: free public GeoTIFF viewer (*GeoTIFF* in the menu). See below.
 - `ekstrak-pdf.html`: free public PDF map extractor (*PDF Peta* in the menu). See below.
+- `analisis-spasial.html`: free public spatial statistics and operations (*Analisis* in the menu). See below.
 
 Live site: https://geosai-geospatial.github.io/data-repository/
 
@@ -85,18 +86,43 @@ Public pages ──────────────────────�
 - **Sample.** *Coba dengan peta contoh* loads `data/contoh-peta.pdf`, built by `node scripts/build-sample-pdf.js`: an A4 map of Bali and Lombok in UTM 50 S with a picture of fictional coastal "hazard" zones (by distance to the coast, labelled as fictional), vector coastlines from `data/basemap.json` (Natural Earth, public domain), grid crosses every 20 km with labelled coordinates, towns, labels and a legend. It is not a GeoPDF, so it exercises the manual georeferencing.
 - **Usage counts.** Opening a file, opening the sample and extracting are GoatCounter events (`ekstrak-pdf/buka`, `ekstrak-pdf/contoh`, `ekstrak-pdf/ekstrak`), never the file name or contents.
 
+## Public spatial analysis
+
+`analisis-spasial.html` runs basic spatial statistics and operations on a visitor's own data, without signing up. It reads the same formats as the converter (shapefile, GeoJSON, KML/KMZ, GPX, CSV; UTM and Web Mercator converted to WGS 84), shows the data and the result on a Leaflet map, explains the result in Indonesian, and lets the visitor download the result layer (shapefile, GeoJSON, KML, CSV) and the tables (CSV).
+
+| Analysis | What it computes |
+|---|---|
+| Statistik atribut | Numbers: count, total, mean, median, standard deviation, quartiles, coefficient of variation, histogram (Sturges' bins), optionally per group. Text: frequency of each value, with its area or length. |
+| Luas, keliling & panjang | Adds `luas_ha` and `kelilingkm` (polygons), `panjang_km` (lines) or `bujur`/`lintang` (points). |
+| Pola sebaran | Mean centre (optionally weighted), standard distance, and the Clark–Evans nearest-neighbour index R with its z-score, over the points' convex hull. Lines and polygons are represented by their centroids. |
+| Moran's I | Global spatial autocorrelation, row-standardised weights, z-score from the variance under randomisation, and a pseudo p-value from 999 seeded permutations. |
+| Hot spot (Gi*) | Getis-Ord Gi* per feature (binary weights including the feature itself): `gi_z`, `gi_p`, `gi_bin` (±1/2/3 for 90/95/99 % confidence) and `gi_kelas`; no multiple-testing correction (the page says so). |
+| Buffer | Distance in real metres (negative shrinks polygons), optionally dissolved into one polygon. |
+| Centroid, convex hull, bounding box | Per feature or for everything; centroids can be forced inside their polygon. |
+| Dissolve | Union by a field's value (or all), with feature count, area and the total of a chosen number field. |
+| Hitung titik dalam poligon | Points per polygon (`n_titik`), per km² (`per_km2`), and the total/mean of a point field. Either layer may hold the polygons. |
+| Clip, erase, intersect | Keep or remove what lies inside a second, polygon layer; intersect also joins both layers' attributes. Area or length is recomputed for the pieces. |
+
+- **Spatial weights** (Moran, Gi*): *bersinggungan* (queen contiguity: polygons or lines sharing a vertex), *k tetangga terdekat* (default 8), or *dalam jarak* (a fixed distance). Features without a contiguous neighbour (islands) get their nearest one, and the report counts them.
+- **Accuracy.** Areas are computed on the WGS 84 ellipsoid (Lambert cylindrical equal-area with the authalic latitude, exact for edges as drawn in that projection), distances and lengths with Vincenty's formula. Buffers are built in an azimuthal equidistant projection on the ellipsoid's Gaussian radius at the feature (±0.3 % of the distance). Neighbour searches use a 3-D grid on the sphere. Moran's I (value, variance, z, p), Gi* z-scores and the k-nearest neighbours were checked against PySAL (esda 2.10, libpysal 4.15) and match to 1e-9 or better; `test/geostats.test.js` keeps those reference values.
+- **Polygon operations** (union, intersection, difference) use polygon-clipping 0.15.7 (MIT), vendored in `assets/vendor/polygon-clipping/`. Coordinates are snapped to a 1 mm grid, and retried on coarser ones, where the library trips on near-coincident vertices.
+- **GeoSAI does not store the data.** `assets/js/geostats.js` does the analysis (shared with the tests), `assets/js/analysisworker.js` runs it in a worker with `geoconvert.js` for reading and writing, and `assets/js/analysis.js` is the page. The page has the same Content-Security-Policy and privacy statement as the converter; the basemap reveals the area on screen to the tile server, as in the GeoTIFF viewer, and *Tanpa peta dasar* in the layer switcher turns it off.
+- **Limits.** The converter's size limit (`sizeLimit()`). The map draws up to 50,000 features and 2 million vertices per layer; bigger layers are still analysed and downloadable. Buffers, clips and dissolves of very detailed polygons can take seconds to minutes (the seven island regions of the sample, ~60,000 vertices, buffer in ~6 s).
+- **Sample data.** *Coba dengan data contoh* loads the 37 cities (`data/contoh-kota.geojson`) as the data and `data/contoh-pulau.geojson` as the second layer: Indonesia's land from `data/basemap.json` grouped into the seven island regions the cities use, built by `node scripts/build-sample-islands.js` (a demo at basemap precision; two coastal cities fall just off the simplified coast).
+- **Usage counts.** Opening a file, opening the sample, running an analysis and downloading are GoatCounter events (`analisis-spasial/buka`, `analisis-spasial/contoh`, `analisis-spasial/<analysis>`, `analisis-spasial/unduh`), never the file name or contents.
+
 ## Visitor stats
 
 The admin page opens with a **Visitors** panel: visitors today, in the last 7 and 30 days (each compared with the period before), a bar per day for the last 30 days, the top pages, and where visitors come from.
 
-GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`, `lihat-geotiff`, `ekstrak-pdf`) loads GoatCounter's counting script in its `<head>`:
+GitHub Pages has no server, so it cannot count visits itself. Each public page (`index`, `services`, `contact`, `dataset`, `buat-peta`, `konversi-data`, `lihat-geotiff`, `ekstrak-pdf`, `analisis-spasial`) loads GoatCounter's counting script in its `<head>`:
 
 ```html
 <script data-goatcounter="https://geosai.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 ```
 
-The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page, `konversi-data.html`, `lihat-geotiff.html` and `ekstrak-pdf.html`.
+The panel reads the totals back through GoatCounter's API (`assets/js/visitors.js`), using the site code in `public/assets/js/config.js` → `analytics.goatcounter`. If you change GoatCounter sites, change the code in both places and in the `connect-src` of the admin page, `konversi-data.html`, `lihat-geotiff.html`, `ekstrak-pdf.html` and `analisis-spasial.html`.
 
 - **No cookies.** GoatCounter works out unique visitors from a daily-rotating hash and stores no personal data, so no cookie banner is needed.
 - **Not counted:** the admin page (it has no script), local previews (`localhost`), automated browsers, and any browser where *Don't count my own visits on this device* is ticked in the panel (it sets GoatCounter's own `skipgc` flag). Tick it on each browser you use, so your own visits don't make the numbers look bigger.
@@ -140,7 +166,7 @@ node scripts/build-basemap.js ne_10m_admin_0_countries.geojson
 
 ```sh
 npm start        # serves public/ at http://localhost:8000
-npm test         # schema, static map, converter, GeoTIFF and PDF extractor tests
+npm test         # schema, static map, converter, GeoTIFF, PDF extractor and spatial analysis tests
 npm run validate # check public/data/datasets.json
 ```
 
